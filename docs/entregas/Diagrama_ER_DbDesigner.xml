@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modelo nome="PingPoli" sgbd="PostgreSQL" versao="2.0">
+
+  <tabelas>
+
+    <tabela nome="curso">
+      <coluna nome="id" tipo="int" chave-primaria="sim" nulo="nao" auto-incremento="sim"/>
+      <coluna nome="nome" tipo="varchar" tamanho="100" chave-primaria="nao" nulo="nao"/>
+    </tabela>
+
+    <tabela nome="atleta">
+      <coluna nome="id" tipo="int" chave-primaria="sim" nulo="nao" auto-incremento="sim"/>
+      <coluna nome="nome" tipo="varchar" tamanho="100" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="nusp" tipo="int" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="email" tipo="varchar" tamanho="100" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="senha_hash" tipo="varchar" tamanho="255" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="curso_id" tipo="int" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="ano_ingresso" tipo="int" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="telefone" tipo="varchar" tamanho="20" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="foto" tipo="varchar" tamanho="255" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="mao_dominante" tipo="varchar" tamanho="10" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="papel" tipo="varchar" tamanho="20" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="situacao" tipo="varchar" tamanho="20" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="motivo_recusa" tipo="varchar" tamanho="300" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="avaliado_por" tipo="int" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="data_solicitacao" tipo="timestamp" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="data_avaliacao" tipo="timestamp" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="ultimo_acesso" tipo="timestamp" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="tentativas_login" tipo="int" chave-primaria="nao" nulo="nao" padrao="0"/>
+      <coluna nome="bloqueado_ate" tipo="timestamp" chave-primaria="nao" nulo="sim"/>
+    </tabela>
+
+    <tabela nome="token_redefinicao">
+      <coluna nome="id" tipo="int" chave-primaria="sim" nulo="nao" auto-incremento="sim"/>
+      <coluna nome="atleta_id" tipo="int" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="token_hash" tipo="varchar" tamanho="255" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="criado_em" tipo="timestamp" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="expira_em" tipo="timestamp" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="usado_em" tipo="timestamp" chave-primaria="nao" nulo="sim"/>
+    </tabela>
+
+    <tabela nome="aviso">
+      <coluna nome="id" tipo="int" chave-primaria="sim" nulo="nao" auto-incremento="sim"/>
+      <coluna nome="autor_id" tipo="int" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="titulo" tipo="varchar" tamanho="100" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="conteudo" tipo="text" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="categoria" tipo="varchar" tamanho="20" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="fixado" tipo="boolean" chave-primaria="nao" nulo="nao" padrao="false"/>
+      <coluna nome="data_publicacao" tipo="timestamp" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="data_edicao" tipo="timestamp" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="data_expiracao" tipo="date" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="excluido" tipo="boolean" chave-primaria="nao" nulo="nao" padrao="false"/>
+    </tabela>
+
+    <tabela nome="aviso_leitura">
+      <coluna nome="aviso_id" tipo="int" chave-primaria="sim" nulo="nao"/>
+      <coluna nome="atleta_id" tipo="int" chave-primaria="sim" nulo="nao"/>
+      <coluna nome="data_leitura" tipo="timestamp" chave-primaria="nao" nulo="nao"/>
+    </tabela>
+
+    <tabela nome="serie_evento">
+      <coluna nome="id" tipo="int" chave-primaria="sim" nulo="nao" auto-incremento="sim"/>
+      <coluna nome="recorrencia" tipo="varchar" tamanho="15" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="data_inicio" tipo="date" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="data_fim" tipo="date" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="criado_por" tipo="int" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="data_criacao" tipo="timestamp" chave-primaria="nao" nulo="nao"/>
+    </tabela>
+
+    <tabela nome="evento">
+      <coluna nome="id" tipo="int" chave-primaria="sim" nulo="nao" auto-incremento="sim"/>
+      <coluna nome="tipo" tipo="varchar" tamanho="15" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="titulo" tipo="varchar" tamanho="100" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="data_evento" tipo="date" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="hora_inicio" tipo="time" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="hora_fim" tipo="time" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="local_evento" tipo="varchar" tamanho="100" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="descricao" tipo="varchar" tamanho="1000" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="status" tipo="varchar" tamanho="15" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="serie_id" tipo="int" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="motivo_cancelamento" tipo="varchar" tamanho="200" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="criado_por" tipo="int" chave-primaria="nao" nulo="nao"/>
+    </tabela>
+
+    <tabela nome="presenca">
+      <coluna nome="evento_id" tipo="int" chave-primaria="sim" nulo="nao"/>
+      <coluna nome="atleta_id" tipo="int" chave-primaria="sim" nulo="nao"/>
+      <coluna nome="registrado_por" tipo="int" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="data_registro" tipo="timestamp" chave-primaria="nao" nulo="nao"/>
+    </tabela>
+
+    <tabela nome="campeonato">
+      <coluna nome="id" tipo="int" chave-primaria="sim" nulo="nao" auto-incremento="sim"/>
+      <coluna nome="nome" tipo="varchar" tamanho="120" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="organizador" tipo="varchar" tamanho="100" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="local_campeonato" tipo="varchar" tamanho="150" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="data_inicio" tipo="date" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="data_fim" tipo="date" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="abertura_inscricoes" tipo="timestamp" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="encerramento_inscricoes" tipo="timestamp" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="valor_inscricao" tipo="decimal" tamanho="10,2" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="link_regulamento" tipo="varchar" tamanho="255" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="observacoes" tipo="varchar" tamanho="1000" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="status" tipo="varchar" tamanho="25" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="criado_por" tipo="int" chave-primaria="nao" nulo="nao"/>
+    </tabela>
+
+    <tabela nome="categoria">
+      <coluna nome="id" tipo="int" chave-primaria="sim" nulo="nao" auto-incremento="sim"/>
+      <coluna nome="campeonato_id" tipo="int" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="nome" tipo="varchar" tamanho="50" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="vagas" tipo="int" chave-primaria="nao" nulo="sim"/>
+    </tabela>
+
+    <tabela nome="inscricao">
+      <coluna nome="id" tipo="int" chave-primaria="sim" nulo="nao" auto-incremento="sim"/>
+      <coluna nome="categoria_id" tipo="int" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="atleta_id" tipo="int" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="status" tipo="varchar" tamanho="15" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="observacoes" tipo="varchar" tamanho="300" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="data_inscricao" tipo="timestamp" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="inscrito_por" tipo="int" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="motivo_cancelamento" tipo="varchar" tamanho="300" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="colocacao" tipo="int" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="destaque" tipo="varchar" tamanho="50" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="colocacao_por" tipo="int" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="data_colocacao" tipo="timestamp" chave-primaria="nao" nulo="sim"/>
+    </tabela>
+
+    <tabela nome="adversario_externo">
+      <coluna nome="id" tipo="int" chave-primaria="sim" nulo="nao" auto-incremento="sim"/>
+      <coluna nome="nome" tipo="varchar" tamanho="100" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="clube" tipo="varchar" tamanho="100" chave-primaria="nao" nulo="sim"/>
+    </tabela>
+
+    <tabela nome="partida">
+      <coluna nome="id" tipo="int" chave-primaria="sim" nulo="nao" auto-incremento="sim"/>
+      <coluna nome="atleta_id" tipo="int" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="adversario_id" tipo="int" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="adversario_externo_id" tipo="int" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="tipo_adversario" tipo="varchar" tamanho="10" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="campeonato_id" tipo="int" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="categoria_id" tipo="int" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="fase" tipo="varchar" tamanho="50" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="formato" tipo="int" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="data_jogo" tipo="date" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="status" tipo="varchar" tamanho="15" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="observacoes" tipo="varchar" tamanho="300" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="data_registro" tipo="timestamp" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="data_confirmacao" tipo="timestamp" chave-primaria="nao" nulo="sim"/>
+    </tabela>
+
+    <tabela nome="contestacao">
+      <coluna nome="id" tipo="int" chave-primaria="sim" nulo="nao" auto-incremento="sim"/>
+      <coluna nome="partida_id" tipo="int" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="contestante_id" tipo="int" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="justificativa" tipo="varchar" tamanho="500" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="data_contestacao" tipo="timestamp" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="resolvida_por" tipo="int" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="motivo_decisao" tipo="varchar" tamanho="300" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="data_resolucao" tipo="timestamp" chave-primaria="nao" nulo="sim"/>
+    </tabela>
+
+    <tabela nome="set_partida">
+      <coluna nome="id" tipo="int" chave-primaria="sim" nulo="nao" auto-incremento="sim"/>
+      <coluna nome="partida_id" tipo="int" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="contestacao_id" tipo="int" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="numero" tipo="int" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="pontos_atleta" tipo="int" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="pontos_adversario" tipo="int" chave-primaria="nao" nulo="nao"/>
+    </tabela>
+
+    <tabela nome="historico_partida">
+      <coluna nome="id" tipo="int" chave-primaria="sim" nulo="nao" auto-incremento="sim"/>
+      <coluna nome="partida_id" tipo="int" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="alterado_por" tipo="int" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="motivo" tipo="varchar" tamanho="300" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="valores_anteriores" tipo="text" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="data_alteracao" tipo="timestamp" chave-primaria="nao" nulo="nao"/>
+    </tabela>
+
+    <tabela nome="auditoria">
+      <coluna nome="id" tipo="int" chave-primaria="sim" nulo="nao" auto-incremento="sim"/>
+      <coluna nome="entidade" tipo="varchar" tamanho="30" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="registro_id" tipo="int" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="acao" tipo="varchar" tamanho="30" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="autor_id" tipo="int" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="justificativa" tipo="varchar" tamanho="300" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="valor_anterior" tipo="text" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="valor_novo" tipo="text" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="data_acao" tipo="timestamp" chave-primaria="nao" nulo="nao"/>
+    </tabela>
+
+    <tabela nome="notificacao">
+      <coluna nome="id" tipo="int" chave-primaria="sim" nulo="nao" auto-incremento="sim"/>
+      <coluna nome="destinatario_id" tipo="int" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="tipo" tipo="varchar" tamanho="30" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="mensagem" tipo="varchar" tamanho="300" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="link" tipo="varchar" tamanho="255" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="lida" tipo="boolean" chave-primaria="nao" nulo="nao" padrao="false"/>
+      <coluna nome="data_criacao" tipo="timestamp" chave-primaria="nao" nulo="nao"/>
+    </tabela>
+
+    <tabela nome="execucao_rotina">
+      <coluna nome="id" tipo="int" chave-primaria="sim" nulo="nao" auto-incremento="sim"/>
+      <coluna nome="etapa" tipo="varchar" tamanho="50" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="inicio" tipo="timestamp" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="fim" tipo="timestamp" chave-primaria="nao" nulo="sim"/>
+      <coluna nome="registros_afetados" tipo="int" chave-primaria="nao" nulo="nao" padrao="0"/>
+      <coluna nome="sucesso" tipo="boolean" chave-primaria="nao" nulo="nao"/>
+      <coluna nome="erro" tipo="text" chave-primaria="nao" nulo="sim"/>
+    </tabela>
+
+  </tabelas>
+
+  <unicidades>
+    <unicidade nome="curso_nome_uk" tabela="curso" colunas="nome"/>
+    <unicidade nome="atleta_nusp_uk" tabela="atleta" colunas="nusp" regra="RN02"/>
+    <unicidade nome="atleta_email_uk" tabela="atleta" colunas="email" regra="UC02 E4"/>
+    <unicidade nome="token_hash_uk" tabela="token_redefinicao" colunas="token_hash"/>
+    <unicidade nome="categoria_nome_uk" tabela="categoria" colunas="campeonato_id, lower(nome)" regra="UC12"/>
+    <unicidade nome="inscricao_atleta_categoria_uk" tabela="inscricao" colunas="categoria_id, atleta_id" filtro="status = 'ativa'" regra="UC13 E5"/>
+    <unicidade nome="adversario_externo_uk" tabela="adversario_externo" colunas="lower(nome), lower(coalesce(clube, ''))" regra="RN23"/>
+    <unicidade nome="contestacao_aberta_uk" tabela="contestacao" colunas="partida_id" filtro="data_resolucao is null"/>
+    <unicidade nome="set_partida_numero_uk" tabela="set_partida" colunas="partida_id, numero" filtro="contestacao_id is null"/>
+    <unicidade nome="set_contestacao_numero_uk" tabela="set_partida" colunas="contestacao_id, numero" filtro="contestacao_id is not null"/>
+  </unicidades>
+
+  <restricoes>
+    <restricao nome="atleta_nusp_ck" tabela="atleta" regra="RN02">nusp between 1 and 99999999</restricao>
+    <restricao nome="atleta_email_ck" tabela="atleta" regra="RN01">email = lower(email) and email like '%@usp.br'</restricao>
+    <restricao nome="atleta_papel_ck" tabela="atleta">papel in ('atleta', 'diretor')</restricao>
+    <restricao nome="atleta_situacao_ck" tabela="atleta">situacao in ('pendente', 'ativa', 'recusada', 'inativa')</restricao>
+    <restricao nome="atleta_mao_ck" tabela="atleta">mao_dominante is null or mao_dominante in ('destro', 'canhoto')</restricao>
+    <restricao nome="atleta_ano_ck" tabela="atleta">ano_ingresso between 1900 and 2200</restricao>
+    <restricao nome="atleta_tentativas_ck" tabela="atleta">tentativas_login &gt;= 0</restricao>
+    <restricao nome="atleta_recusa_ck" tabela="atleta" regra="UC03">situacao &lt;&gt; 'recusada' or motivo_recusa is not null</restricao>
+    <restricao nome="token_validade_ck" tabela="token_redefinicao" regra="RN06">expira_em &gt; criado_em</restricao>
+    <restricao nome="serie_recorrencia_ck" tabela="serie_evento">recorrencia in ('semanal')</restricao>
+    <restricao nome="serie_periodo_ck" tabela="serie_evento" regra="UC07">data_fim &gt; data_inicio and data_fim &lt;= data_inicio + interval '6 months'</restricao>
+    <restricao nome="evento_tipo_ck" tabela="evento">tipo in ('treino', 'atividade', 'campeonato')</restricao>
+    <restricao nome="evento_status_ck" tabela="evento">status in ('agendado', 'cancelado', 'realizado')</restricao>
+    <restricao nome="evento_hora_ck" tabela="evento">hora_fim &gt; hora_inicio</restricao>
+    <restricao nome="campeonato_status_ck" tabela="campeonato">status in ('planejado', 'inscricoes_abertas', 'inscricoes_encerradas', 'finalizado', 'cancelado')</restricao>
+    <restricao nome="campeonato_datas_ck" tabela="campeonato">data_fim &gt;= data_inicio</restricao>
+    <restricao nome="campeonato_prazo_ck" tabela="campeonato">encerramento_inscricoes &gt; abertura_inscricoes</restricao>
+    <restricao nome="campeonato_valor_ck" tabela="campeonato">valor_inscricao is null or valor_inscricao &gt;= 0</restricao>
+    <restricao nome="categoria_vagas_ck" tabela="categoria">vagas is null or vagas &gt; 0</restricao>
+    <restricao nome="inscricao_status_ck" tabela="inscricao">status in ('ativa', 'cancelada')</restricao>
+    <restricao nome="inscricao_colocacao_ck" tabela="inscricao" regra="RN25">colocacao is null or colocacao &gt;= 1</restricao>
+    <restricao nome="inscricao_coloc_ativa_ck" tabela="inscricao" regra="RN25">colocacao is null or status = 'ativa'</restricao>
+    <restricao nome="inscricao_cancel_ck" tabela="inscricao" regra="UC14 A3">status &lt;&gt; 'cancelada' or motivo_cancelamento is not null</restricao>
+    <restricao nome="partida_status_ck" tabela="partida">status in ('pendente', 'confirmada', 'contestada', 'removida')</restricao>
+    <restricao nome="partida_formato_ck" tabela="partida" regra="RN08">formato in (3, 5, 7)</restricao>
+    <restricao nome="partida_adversario_xor_ck" tabela="partida" tipo="associacao-exclusiva">(tipo_adversario = 'poli' and adversario_id is not null and adversario_externo_id is null) or (tipo_adversario = 'externo' and adversario_id is null and adversario_externo_id is not null)</restricao>
+    <restricao nome="partida_auto_ck" tabela="partida">adversario_id is null or adversario_id &lt;&gt; atleta_id</restricao>
+    <restricao nome="contestacao_justif_ck" tabela="contestacao" regra="RN21">char_length(justificativa) between 10 and 500</restricao>
+    <restricao nome="contestacao_resolucao_ck" tabela="contestacao" regra="UC17">(resolvida_por is null and motivo_decisao is null and data_resolucao is null) or (resolvida_por is not null and motivo_decisao is not null and data_resolucao is not null)</restricao>
+    <restricao nome="set_numero_ck" tabela="set_partida">numero between 1 and 7</restricao>
+    <restricao nome="set_pontos_ck" tabela="set_partida">pontos_atleta &gt;= 0 and pontos_adversario &gt;= 0</restricao>
+    <restricao nome="set_placar_ck" tabela="set_partida" regra="RN08">(pontos_atleta &gt;= 11 and pontos_atleta - pontos_adversario &gt;= 2) or (pontos_adversario &gt;= 11 and pontos_adversario - pontos_atleta &gt;= 2)</restricao>
+    <restricao nome="historico_motivo_ck" tabela="historico_partida">char_length(motivo) between 10 and 300</restricao>
+    <restricao nome="rotina_periodo_ck" tabela="execucao_rotina">fim is null or fim &gt;= inicio</restricao>
+    <restricao nome="rotina_afetados_ck" tabela="execucao_rotina">registros_afetados &gt;= 0</restricao>
+  </restricoes>
+
+  <relacionamentos>
+    <relacionamento nome="atleta_curso_fk" tabela-origem="atleta" coluna-origem="curso_id" tabela-destino="curso" coluna-destino="id" ao-excluir="restrict"/>
+    <relacionamento nome="atleta_avaliador_fk" tabela-origem="atleta" coluna-origem="avaliado_por" tabela-destino="atleta" coluna-destino="id" ao-excluir="set null"/>
+    <relacionamento nome="token_atleta_fk" tabela-origem="token_redefinicao" coluna-origem="atleta_id" tabela-destino="atleta" coluna-destino="id" ao-excluir="cascade" tipo="composicao"/>
+    <relacionamento nome="aviso_autor_fk" tabela-origem="aviso" coluna-origem="autor_id" tabela-destino="atleta" coluna-destino="id" ao-excluir="restrict"/>
+    <relacionamento nome="aviso_leitura_aviso_fk" tabela-origem="aviso_leitura" coluna-origem="aviso_id" tabela-destino="aviso" coluna-destino="id" ao-excluir="cascade" tipo="composicao"/>
+    <relacionamento nome="aviso_leitura_atleta_fk" tabela-origem="aviso_leitura" coluna-origem="atleta_id" tabela-destino="atleta" coluna-destino="id" ao-excluir="cascade"/>
+    <relacionamento nome="serie_criador_fk" tabela-origem="serie_evento" coluna-origem="criado_por" tabela-destino="atleta" coluna-destino="id" ao-excluir="restrict"/>
+    <relacionamento nome="evento_serie_fk" tabela-origem="evento" coluna-origem="serie_id" tabela-destino="serie_evento" coluna-destino="id" ao-excluir="cascade" tipo="composicao"/>
+    <relacionamento nome="evento_criador_fk" tabela-origem="evento" coluna-origem="criado_por" tabela-destino="atleta" coluna-destino="id" ao-excluir="restrict"/>
+    <relacionamento nome="presenca_evento_fk" tabela-origem="presenca" coluna-origem="evento_id" tabela-destino="evento" coluna-destino="id" ao-excluir="cascade" tipo="composicao"/>
+    <relacionamento nome="presenca_atleta_fk" tabela-origem="presenca" coluna-origem="atleta_id" tabela-destino="atleta" coluna-destino="id" ao-excluir="restrict" regra="RN24"/>
+    <relacionamento nome="presenca_registrou_fk" tabela-origem="presenca" coluna-origem="registrado_por" tabela-destino="atleta" coluna-destino="id" ao-excluir="restrict"/>
+    <relacionamento nome="campeonato_criador_fk" tabela-origem="campeonato" coluna-origem="criado_por" tabela-destino="atleta" coluna-destino="id" ao-excluir="restrict"/>
+    <relacionamento nome="categoria_campeonato_fk" tabela-origem="categoria" coluna-origem="campeonato_id" tabela-destino="campeonato" coluna-destino="id" ao-excluir="cascade" tipo="composicao"/>
+    <relacionamento nome="inscricao_categoria_fk" tabela-origem="inscricao" coluna-origem="categoria_id" tabela-destino="categoria" coluna-destino="id" ao-excluir="restrict" regra="RN18"/>
+    <relacionamento nome="inscricao_atleta_fk" tabela-origem="inscricao" coluna-origem="atleta_id" tabela-destino="atleta" coluna-destino="id" ao-excluir="restrict" regra="RN24"/>
+    <relacionamento nome="inscricao_autor_fk" tabela-origem="inscricao" coluna-origem="inscrito_por" tabela-destino="atleta" coluna-destino="id" ao-excluir="restrict"/>
+    <relacionamento nome="inscricao_coloc_por_fk" tabela-origem="inscricao" coluna-origem="colocacao_por" tabela-destino="atleta" coluna-destino="id" ao-excluir="set null"/>
+    <relacionamento nome="partida_atleta_fk" tabela-origem="partida" coluna-origem="atleta_id" tabela-destino="atleta" coluna-destino="id" ao-excluir="restrict" regra="RN24"/>
+    <relacionamento nome="partida_adversario_fk" tabela-origem="partida" coluna-origem="adversario_id" tabela-destino="atleta" coluna-destino="id" ao-excluir="restrict" regra="RN24"/>
+    <relacionamento nome="partida_externo_fk" tabela-origem="partida" coluna-origem="adversario_externo_id" tabela-destino="adversario_externo" coluna-destino="id" ao-excluir="restrict"/>
+    <relacionamento nome="partida_campeonato_fk" tabela-origem="partida" coluna-origem="campeonato_id" tabela-destino="campeonato" coluna-destino="id" ao-excluir="set null" tipo="agregacao"/>
+    <relacionamento nome="partida_categoria_fk" tabela-origem="partida" coluna-origem="categoria_id" tabela-destino="categoria" coluna-destino="id" ao-excluir="set null" tipo="agregacao"/>
+    <relacionamento nome="contestacao_partida_fk" tabela-origem="contestacao" coluna-origem="partida_id" tabela-destino="partida" coluna-destino="id" ao-excluir="cascade" tipo="composicao"/>
+    <relacionamento nome="contestacao_contestante_fk" tabela-origem="contestacao" coluna-origem="contestante_id" tabela-destino="atleta" coluna-destino="id" ao-excluir="restrict"/>
+    <relacionamento nome="contestacao_resolvedor_fk" tabela-origem="contestacao" coluna-origem="resolvida_por" tabela-destino="atleta" coluna-destino="id" ao-excluir="set null"/>
+    <relacionamento nome="set_partida_fk" tabela-origem="set_partida" coluna-origem="partida_id" tabela-destino="partida" coluna-destino="id" ao-excluir="cascade" tipo="composicao"/>
+    <relacionamento nome="set_contestacao_fk" tabela-origem="set_partida" coluna-origem="contestacao_id" tabela-destino="contestacao" coluna-destino="id" ao-excluir="cascade" tipo="composicao"/>
+    <relacionamento nome="historico_partida_fk" tabela-origem="historico_partida" coluna-origem="partida_id" tabela-destino="partida" coluna-destino="id" ao-excluir="cascade" tipo="composicao"/>
+    <relacionamento nome="historico_autor_fk" tabela-origem="historico_partida" coluna-origem="alterado_por" tabela-destino="atleta" coluna-destino="id" ao-excluir="restrict"/>
+    <relacionamento nome="auditoria_autor_fk" tabela-origem="auditoria" coluna-origem="autor_id" tabela-destino="atleta" coluna-destino="id" ao-excluir="restrict"/>
+    <relacionamento nome="notificacao_destinatario_fk" tabela-origem="notificacao" coluna-origem="destinatario_id" tabela-destino="atleta" coluna-destino="id" ao-excluir="cascade"/>
+  </relacionamentos>
+
+  <regras-na-aplicacao>
+    <regra id="RN04">bloqueio apos 5 tentativas de login (depende do relogio)</regra>
+    <regra id="RN10">confirmacao automatica de partida em 7 dias (UC20)</regra>
+    <regra id="RN11">data da partida nao pode ser futura (depende do relogio)</regra>
+    <regra id="RN12">janela de registro de presenca (depende do relogio)</regra>
+    <regra id="RN13">inscricao dentro do prazo do campeonato (depende do relogio)</regra>
+    <regra id="RN14">ao menos um Diretor Ativo (regra entre linhas)</regra>
+    <regra id="RN17">no maximo 3 avisos fixados (regra entre linhas)</regra>
+    <regra id="RN19">quem registra a partida e um dos dois jogadores</regra>
+    <regra id="RN23">comparacao de nomes ignorando acentos</regra>
+  </regras-na-aplicacao>
+
+</modelo>
