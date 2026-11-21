@@ -18,5 +18,8 @@ urlpatterns = [
          name="atleta-inativar"),
     path("atletas/<int:pk>/reativar/", views.MudarSituacaoView.as_view(nova_situacao=Atleta.Situacao.ATIVA),
          name="atleta-reativar"),
-    path("atletas/<int:pk>/papel/", views.MudarPapelView.as_view(), name="atleta-papel")
+    path("atletas/<int:pk>/papel/", views.MudarPapelView.as_view(), name="atleta-papel"),
+    path("perfil/", views.PerfilView.as_view(), name="perfil"),
+    path("perfil/senha/", views.TrocaSenhaView.as_view(), name="perfil-senha")
 ]
+

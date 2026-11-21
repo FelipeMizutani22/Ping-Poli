@@ -112,3 +112,48 @@ class PapelSerializer(serializers.Serializer):
     papel = serializers.ChoiceField(
         choices=Atleta.Papel.choices, error_messages={"invalid_choice": "Papel inválido. Use 'atleta' ou 'diretor'."}
     )
+
+
+class PerfilSerializer(serializers.ModelSerializer):
+    """Edição do próprio perfil (UC04). NUSP e e-mail são somente leitura; a resposta tem o formato do AtletaMe."""
+
+    nome = serializers.RegexField(
+        r"^[A-Za-zÀ-ÖØ-öø-ÿ ]{3,100}$",
+        error_messages={"invalid": "Use apenas letras e espaços (3 a 100 caracteres)."},
+    )
+    telefone = serializers.RegexField(
+        r"^\(\d{2}\) \d{5}-\d{4}$", required=False, allow_blank=True,
+        error_messages={"invalid": "Use o formato (99) 99999-9999."},
+    )
+
+    class Meta:
+        model = Atleta
+        fields = ["nome", "curso", "ano_ingresso", "telefone", "foto", "mao_dominante"]
+
+    # mesmas regras do cadastro (UC02), reaproveitadas
+    validate_nome = SolicitacaoCadastroSerializer.validate_nome
+    validate_ano_ingresso = SolicitacaoCadastroSerializer.validate_ano_ingresso
+
+    def to_representation(self, instance):
+        return AtletaMeSerializer(instance).data
+
+
+class TrocaSenhaSerializer(serializers.Serializer):
+    senha_atual = serializers.CharField(trim_whitespace=False)
+    nova_senha = serializers.CharField(trim_whitespace=False)
+    confirmacao = serializers.CharField(trim_whitespace=False)
+
+    def validate_senha_atual(self, valor):
+        if not self.context["usuario"].check_password(valor):
+            raise serializers.ValidationError("Senha atual incorreta.")
+        return valor
+
+    def validate_nova_senha(self, valor):
+        if not 8 <= len(valor) <= 64:
+            raise serializers.ValidationError("A senha deve ter de 8 a 64 caracteres.")
+        return valor
+
+    def validate(self, dados):
+        if dados["nova_senha"] != dados["confirmacao"]:
+            raise serializers.ValidationError({"confirmacao": "As senhas não conferem."})
+        return dados

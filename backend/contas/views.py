@@ -19,8 +19,10 @@ from .serializers import (
     AtletaResumoSerializer,
     CursoSerializer,
     PapelSerializer,
+    PerfilSerializer,
     RecusaSerializer,
     SolicitacaoCadastroSerializer,
+    TrocaSenhaSerializer
 )
 from .servicos import (
     MSG_SOLICITACAO_ENVIADA,
@@ -267,3 +269,28 @@ class MudarPapelView(APIView):
         except UltimoDiretor as e:
             return erro(status.HTTP_409_CONFLICT, "ultimo_diretor", str(e))
         return Response(AtletaAdminSerializer(atleta).data)
+
+
+
+# --- Meu perfil (UC04) ------------------------------------------------------
+
+
+class PerfilView(generics.RetrieveUpdateAPIView):
+    """GET perfil/ e PATCH perfil/ → dados do próprio usuário."""
+
+    serializer_class = PerfilSerializer
+    http_method_names = ["get", "patch"]
+
+    def get_object(self):
+        return self.request.user
+
+
+class TrocaSenhaView(APIView):
+    """POST perfil/senha/ {senha_atual, nova_senha, confirmacao} → 204."""
+
+    def post(self, request):
+        dados = TrocaSenhaSerializer(data=request.data, context={"usuario": request.user})
+        dados.is_valid(raise_exception=True)
+        request.user.set_password(dados.validated_data["nova_senha"])
+        request.user.save(update_fields=["password"])
+        return Response(status=status.HTTP_204_NO_CONTENT)
