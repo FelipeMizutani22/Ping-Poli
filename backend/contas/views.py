@@ -10,7 +10,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Atleta, Curso
-from .serializers import AtletaMeSerializer, AtletaResumoSerializer, CursoSerializer
+from .serializers import (
+    AtletaMeSerializer,
+    AtletaResumoSerializer,
+    CursoSerializer,
+    SolicitacaoCadastroSerializer,
+)
+from .servicos import MSG_SOLICITACAO_ENVIADA, ConflitoCadastro, solicitar_cadastro
 
 MENSAGENS_SITUACAO = {
     Atleta.Situacao.PENDENTE: ("conta_pendente", "Sua solicitação de cadastro aguarda aprovação da Diretoria"),
@@ -115,3 +121,24 @@ class AtletaOpcoesView(generics.ListAPIView):
                 filtro |= Q(nusp=int(termo))
             qs = qs.filter(filtro)
         return qs.order_by("nome")[: self.LIMITE]
+
+
+
+class CadastroView(APIView):
+    """POST cadastro/ → solicitação de cadastro de um Visitante (UC02). A conta nasce Pendente."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        serializer = SolicitacaoCadastroSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)  # 400 com os erros por campo
+        try:
+            _, emails_ok = solicitar_cadastro(serializer.validated_data)
+        except ConflitoCadastro as conflito:
+            return erro(status.HTTP_409_CONFLICT, conflito.codigo, conflito.mensagem)
+
+        resposta = {"detail": MSG_SOLICITACAO_ENVIADA}
+        if not emails_ok:  # UC02-h: a conta fica criada mesmo se o e-mail falhar
+            resposta["aviso"] = "O e-mail de confirmação pode não chegar."
+        return Response(resposta, status=status.HTTP_201_CREATED)
