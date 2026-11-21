@@ -18,6 +18,7 @@ from .serializers import (
     AtletaMeSerializer,
     AtletaResumoSerializer,
     CursoSerializer,
+    PapelSerializer,
     RecusaSerializer,
     SolicitacaoCadastroSerializer,
 )
@@ -25,7 +26,10 @@ from .servicos import (
     MSG_SOLICITACAO_ENVIADA,
     ConflitoCadastro,
     SituacaoInvalida,
+    UltimoDiretor,
     aprovar_cadastro,
+    mudar_papel,
+    mudar_situacao,
     recusar_cadastro,
     solicitar_cadastro,
 )
@@ -225,4 +229,41 @@ class RecusarView(APIView):
             atleta = recusar_cadastro(pk, request.user, dados.validated_data["motivo"])
         except SituacaoInvalida as e:
             return erro(status.HTTP_409_CONFLICT, "situacao_invalida", str(e))
+        return Response(AtletaAdminSerializer(atleta).data)
+
+
+
+class MudarSituacaoView(APIView):
+    """POST atletas/{id}/inativar/ ou atletas/{id}/reativar/ (a URL define a nova situação)."""
+
+    permission_classes = [Diretor]
+    nova_situacao = None  # definido em urls.py
+
+    def post(self, request, pk):
+        get_object_or_404(Atleta, pk=pk)
+        justificativa = (request.data.get("justificativa") or "")[:300]
+        try:
+            atleta = mudar_situacao(pk, request.user, self.nova_situacao, justificativa)
+        except SituacaoInvalida as e:
+            return erro(status.HTTP_409_CONFLICT, "situacao_invalida", str(e))
+        except UltimoDiretor as e:
+            return erro(status.HTTP_409_CONFLICT, "ultimo_diretor", str(e))
+        return Response(AtletaAdminSerializer(atleta).data)
+
+
+class MudarPapelView(APIView):
+    """POST atletas/{id}/papel/ {"papel": "diretor" | "atleta"}"""
+
+    permission_classes = [Diretor]
+
+    def post(self, request, pk):
+        get_object_or_404(Atleta, pk=pk)
+        dados = PapelSerializer(data=request.data)
+        dados.is_valid(raise_exception=True)
+        try:
+            atleta = mudar_papel(pk, request.user, dados.validated_data["papel"])
+        except SituacaoInvalida as e:
+            return erro(status.HTTP_409_CONFLICT, "situacao_invalida", str(e))
+        except UltimoDiretor as e:
+            return erro(status.HTTP_409_CONFLICT, "ultimo_diretor", str(e))
         return Response(AtletaAdminSerializer(atleta).data)

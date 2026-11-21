@@ -105,3 +105,10 @@ class RecusaSerializer(serializers.Serializer):
     motivo = serializers.CharField(
         max_length=300, error_messages={"blank": "Informe o motivo da recusa.", "required": "Informe o motivo da recusa."}
     )
+
+
+
+class PapelSerializer(serializers.Serializer):
+    papel = serializers.ChoiceField(
+        choices=Atleta.Papel.choices, error_messages={"invalid_choice": "Papel inválido. Use 'atleta' ou 'diretor'."}
+    )
