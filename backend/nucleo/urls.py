@@ -1,3 +1,7 @@
 from django.urls import path
 
-urlpatterns = []
+from . import views
+
+urlpatterns = [
+    path("painel/", views.PainelView.as_view(), name="painel"),
+]
