@@ -1,22 +1,34 @@
-"""Autenticação (UC01) e lista de cursos (UC02)."""
+"""Views do app contas: autenticação (UC01), cadastro (UC02), busca e gestão de atletas (UC03)."""
 from django.core.exceptions import ValidationError
-from django.db.models import Q
 from django.core.validators import validate_email
+from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, status
 from rest_framework.authtoken.models import Token
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Atleta, Curso
+from .permissoes import Diretor
 from .serializers import (
+    AtletaAdminSerializer,
     AtletaMeSerializer,
     AtletaResumoSerializer,
     CursoSerializer,
+    RecusaSerializer,
     SolicitacaoCadastroSerializer,
 )
-from .servicos import MSG_SOLICITACAO_ENVIADA, ConflitoCadastro, solicitar_cadastro
+from .servicos import (
+    MSG_SOLICITACAO_ENVIADA,
+    ConflitoCadastro,
+    SituacaoInvalida,
+    aprovar_cadastro,
+    recusar_cadastro,
+    solicitar_cadastro,
+)
 
 MENSAGENS_SITUACAO = {
     Atleta.Situacao.PENDENTE: ("conta_pendente", "Sua solicitação de cadastro aguarda aprovação da Diretoria"),
@@ -142,3 +154,75 @@ class CadastroView(APIView):
         if not emails_ok:  # UC02-h: a conta fica criada mesmo se o e-mail falhar
             resposta["aviso"] = "O e-mail de confirmação pode não chegar."
         return Response(resposta, status=status.HTTP_201_CREATED)
+
+
+
+# --- Gestão de atletas pelo Diretor (UC03) ---------------------------------
+
+
+class Paginacao20(PageNumberPagination):
+    page_size = 20
+
+
+class AtletaListView(generics.ListAPIView):
+    """GET atletas/?situacao=pendente&papel=&busca=&page= → lista paginada (Diretor)."""
+
+    permission_classes = [Diretor]
+    serializer_class = AtletaAdminSerializer
+    pagination_class = Paginacao20
+
+    def get_queryset(self):
+        params = self.request.query_params
+        qs = Atleta.objects.select_related("curso")
+        if params.get("situacao"):
+            qs = qs.filter(situacao=params["situacao"])
+        if params.get("papel"):
+            qs = qs.filter(papel=params["papel"])
+        busca = (params.get("busca") or "").strip()
+        if busca:
+            filtro = Q(nome__icontains=busca)
+            if busca.isdigit():
+                filtro |= Q(nusp=int(busca))
+            qs = qs.filter(filtro)
+        # Solicitações pendentes: da mais antiga para a mais recente (UC03)
+        if params.get("situacao") == Atleta.Situacao.PENDENTE:
+            return qs.order_by("data_solicitacao")
+        return qs.order_by("nome")
+
+
+class AtletaDetailView(generics.RetrieveAPIView):
+    """GET atletas/{id}/ → dados completos (Diretor)."""
+
+    permission_classes = [Diretor]
+    serializer_class = AtletaAdminSerializer
+    queryset = Atleta.objects.select_related("curso")
+
+
+class AprovarView(APIView):
+    """POST atletas/{id}/aprovar/"""
+
+    permission_classes = [Diretor]
+
+    def post(self, request, pk):
+        get_object_or_404(Atleta, pk=pk)
+        try:
+            atleta = aprovar_cadastro(pk, request.user)
+        except SituacaoInvalida as e:
+            return erro(status.HTTP_409_CONFLICT, "situacao_invalida", str(e))
+        return Response(AtletaAdminSerializer(atleta).data)
+
+
+class RecusarView(APIView):
+    """POST atletas/{id}/recusar/ {motivo}"""
+
+    permission_classes = [Diretor]
+
+    def post(self, request, pk):
+        get_object_or_404(Atleta, pk=pk)
+        dados = RecusaSerializer(data=request.data)
+        dados.is_valid(raise_exception=True)
+        try:
+            atleta = recusar_cadastro(pk, request.user, dados.validated_data["motivo"])
+        except SituacaoInvalida as e:
+            return erro(status.HTTP_409_CONFLICT, "situacao_invalida", str(e))
+        return Response(AtletaAdminSerializer(atleta).data)

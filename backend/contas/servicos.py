@@ -3,8 +3,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
-from nucleo.servicos import enviar_email, notificar_diretores
-
+from nucleo.servicos import auditar, enviar_email, notificar, notificar_diretores
 from .models import Atleta
 
 MSG_CONTA_EXISTENTE = (
@@ -74,3 +73,42 @@ def solicitar_cadastro(dados):
         "Você receberá um e-mail quando a Diretoria avaliar.",
     )
     return atleta, emails_ok
+
+
+
+class SituacaoInvalida(Exception):
+    """A ação não é permitida na situação atual da conta."""
+
+
+def _avaliar(atleta_id, diretor, nova_situacao, motivo=""):
+    atleta = Atleta.objects.select_for_update().get(pk=atleta_id)
+    if atleta.situacao != Atleta.Situacao.PENDENTE:
+        raise SituacaoInvalida(f"Esta solicitação não está mais pendente (situação atual: {atleta.get_situacao_display()}).")
+    anterior = {"situacao": atleta.situacao}
+    atleta.situacao = nova_situacao
+    atleta.motivo_recusa = motivo
+    atleta.avaliado_por = diretor
+    atleta.data_avaliacao = timezone.now()
+    atleta.save()
+    acao = "aprovar" if nova_situacao == Atleta.Situacao.ATIVA else "recusar"
+    auditar("atleta", atleta.pk, acao, diretor, motivo, anterior=anterior, novo={"situacao": nova_situacao})
+    return atleta
+
+
+@transaction.atomic
+def aprovar_cadastro(atleta_id, diretor):
+    """UC03: Pendente → Ativa. Notifica e avisa o atleta por e-mail."""
+    atleta = _avaliar(atleta_id, diretor, Atleta.Situacao.ATIVA)
+    notificar(atleta, "cadastro_aprovado", "Bem-vindo(a) à equipe! Seu cadastro foi aprovado.", link="/")
+    enviar_email(atleta.email, "PingPoli: cadastro aprovado",
+                 f"Olá, {atleta.nome}! Seu cadastro foi aprovado. Você já pode entrar no PingPoli.")
+    return atleta
+
+
+@transaction.atomic
+def recusar_cadastro(atleta_id, diretor, motivo):
+    """UC03: Pendente → Recusada, com motivo. Avisa o solicitante por e-mail."""
+    atleta = _avaliar(atleta_id, diretor, Atleta.Situacao.RECUSADA, motivo)
+    enviar_email(atleta.email, "PingPoli: solicitação de cadastro",
+                 f"Olá, {atleta.nome}. Sua solicitação não foi aprovada. Motivo: {motivo}")
+    return atleta
