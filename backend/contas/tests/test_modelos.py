@@ -33,4 +33,4 @@ class AtletaModeloTests(TestCase):
         with connection.cursor() as c:
             colunas = [col.name for col in connection.introspection.get_table_description(c, "atleta")]
         self.assertIn("senha_hash", colunas)
-        self.assertIn("ultimo_acesso", colunas)
+        self.assertIn("ultimo_acesso", colunas) 

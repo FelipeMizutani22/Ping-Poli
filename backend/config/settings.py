@@ -110,7 +110,7 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.SessionAuthentication",
     ],
     # F1.4: trocar por "contas.permissoes.AtletaAtivo" quando a classe existir.
-    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "DEFAULT_PERMISSION_CLASSES": ["contas.permissoes.AtletaAtivo"],
     "DATETIME_FORMAT": "%Y-%m-%dT%H:%M:%S%z",
 }
 
