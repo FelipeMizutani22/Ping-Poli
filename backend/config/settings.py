@@ -121,3 +121,9 @@ CORS_ALLOWED_ORIGINS = os.environ.get(
 # E-mails aparecem no terminal do runserver (sem servidor de e-mail).
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = "PingPoli <nao-responda@pingpoli.local>"
+
+# Testes mais rápidos: hash de senha leve só durante `manage.py test` (nunca em uso real).
+import sys  # noqa: E402
+
+if "test" in sys.argv:
+    PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
