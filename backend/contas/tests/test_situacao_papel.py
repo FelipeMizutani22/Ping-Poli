@@ -70,4 +70,4 @@ class SituacaoPapelTests(APITestCase):
 
     def test_atleta_comum_nao_acessa(self):
         self.entrar(self.ana)
-        self.assertEqual(self.post(self.marina, "inativar").status_code, 403)
+        self.assertEqual(self.post(self.marina, "inativar").status_code, 403)   
