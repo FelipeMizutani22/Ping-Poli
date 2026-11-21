@@ -1,5 +1,6 @@
 """Autenticação (UC01) e lista de cursos (UC02)."""
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 from django.core.validators import validate_email
 from django.utils import timezone
 from rest_framework import generics, status
@@ -9,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Atleta, Curso
-from .serializers import AtletaMeSerializer, CursoSerializer
+from .serializers import AtletaMeSerializer, AtletaResumoSerializer, CursoSerializer
 
 MENSAGENS_SITUACAO = {
     Atleta.Situacao.PENDENTE: ("conta_pendente", "Sua solicitação de cadastro aguarda aprovação da Diretoria"),
@@ -87,3 +88,30 @@ class CursoListView(generics.ListAPIView):
     permission_classes = [AllowAny]
     queryset = Curso.objects.all()
     serializer_class = CursoSerializer
+
+
+
+class AtletaOpcoesView(generics.ListAPIView):
+    """
+    GET atletas/opcoes/?q=ana&incluir_inativos=1
+    Busca atletas por nome ou NUSP para campos de seleção (partida, presença, confronto).
+    Devolve no máximo 20, sem o próprio usuário. Inativos só com incluir_inativos=1 (UC19).
+    """
+
+    serializer_class = AtletaResumoSerializer
+    pagination_class = None
+    LIMITE = 20
+
+    def get_queryset(self):
+        situacoes = [Atleta.Situacao.ATIVA]
+        if self.request.query_params.get("incluir_inativos") == "1":
+            situacoes.append(Atleta.Situacao.INATIVA)
+        qs = Atleta.objects.filter(situacao__in=situacoes).exclude(pk=self.request.user.pk)
+
+        termo = (self.request.query_params.get("q") or "").strip()
+        if termo:
+            filtro = Q(nome__icontains=termo)
+            if termo.isdigit():
+                filtro |= Q(nusp=int(termo))
+            qs = qs.filter(filtro)
+        return qs.order_by("nome")[: self.LIMITE]

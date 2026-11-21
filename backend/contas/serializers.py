@@ -21,3 +21,12 @@ class AtletaMeSerializer(serializers.ModelSerializer):
             "id", "nome", "nusp", "email", "curso", "ano_ingresso", "telefone", "foto",
             "mao_dominante", "papel", "situacao", "ultimo_acesso",
         ]
+
+
+
+class AtletaResumoSerializer(serializers.ModelSerializer):
+    """Formato curto, usado em buscas e listas (ex.: escolher o adversário de uma partida)."""
+
+    class Meta:
+        model = Atleta
+        fields = ["id", "nome", "nusp"]
