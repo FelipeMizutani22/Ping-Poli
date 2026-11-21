@@ -2,6 +2,7 @@
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
+from rest_framework.authtoken.models import Token
 
 from nucleo.servicos import auditar, enviar_email, notificar, notificar_diretores
 from .models import Atleta
@@ -111,4 +112,60 @@ def recusar_cadastro(atleta_id, diretor, motivo):
     atleta = _avaliar(atleta_id, diretor, Atleta.Situacao.RECUSADA, motivo)
     enviar_email(atleta.email, "PingPoli: solicitação de cadastro",
                  f"Olá, {atleta.nome}. Sua solicitação não foi aprovada. Motivo: {motivo}")
+    return atleta
+
+
+# --- Inativar, reativar e mudar papel (UC03) --------------------------------
+
+MSG_ULTIMO_DIRETOR = "A equipe precisa de pelo menos um Diretor ativo."
+
+
+class UltimoDiretor(Exception):
+    """A ação deixaria a equipe sem nenhum Diretor ativo."""
+
+
+def _ha_outro_diretor_ativo(atleta):
+    return (
+        Atleta.objects.filter(papel=Atleta.Papel.DIRETOR, situacao=Atleta.Situacao.ATIVA)
+        .exclude(pk=atleta.pk)
+        .exists()
+    )
+
+
+@transaction.atomic
+def mudar_situacao(atleta_id, diretor, nova_situacao, justificativa=""):
+    """Ativa → Inativa ou Inativa → Ativa. Inativar também encerra as sessões (apaga o token)."""
+    origem = {Atleta.Situacao.INATIVA: Atleta.Situacao.ATIVA, Atleta.Situacao.ATIVA: Atleta.Situacao.INATIVA}
+    atleta = Atleta.objects.select_for_update().get(pk=atleta_id)
+    if atleta.situacao != origem[nova_situacao]:
+        raise SituacaoInvalida(f"Ação não permitida para uma conta {atleta.get_situacao_display()}.")
+    if nova_situacao == Atleta.Situacao.INATIVA and atleta.eh_diretor and not _ha_outro_diretor_ativo(atleta):
+        raise UltimoDiretor(MSG_ULTIMO_DIRETOR)
+
+    anterior = atleta.situacao
+    atleta.situacao = nova_situacao
+    atleta.save(update_fields=["situacao"])
+    if nova_situacao == Atleta.Situacao.INATIVA:
+        Token.objects.filter(user=atleta).delete()
+    acao = "inativar" if nova_situacao == Atleta.Situacao.INATIVA else "reativar"
+    auditar("atleta", atleta.pk, acao, diretor, justificativa,
+            anterior={"situacao": anterior}, novo={"situacao": nova_situacao})
+    return atleta
+
+
+@transaction.atomic
+def mudar_papel(atleta_id, diretor, novo_papel):
+    """Concede ou revoga o perfil de Diretor (só para contas Ativas)."""
+    atleta = Atleta.objects.select_for_update().get(pk=atleta_id)
+    if atleta.situacao != Atleta.Situacao.ATIVA:
+        raise SituacaoInvalida("Só é possível mudar o perfil de uma conta Ativa.")
+    if atleta.papel == novo_papel:
+        return atleta
+    if novo_papel == Atleta.Papel.ATLETA and not _ha_outro_diretor_ativo(atleta):
+        raise UltimoDiretor(MSG_ULTIMO_DIRETOR)
+
+    anterior = atleta.papel
+    atleta.papel = novo_papel
+    atleta.save(update_fields=["papel"])
+    auditar("atleta", atleta.pk, "mudar_papel", diretor, anterior={"papel": anterior}, novo={"papel": novo_papel})
     return atleta
