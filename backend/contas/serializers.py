@@ -84,3 +84,24 @@ class SolicitacaoCadastroSerializer(serializers.Serializer):
         if dados["senha"] != dados["senha_confirmacao"]:
             raise serializers.ValidationError({"senha_confirmacao": "As senhas não conferem."})
         return dados
+
+
+
+class AtletaAdminSerializer(serializers.ModelSerializer):
+    """Visão do Diretor na gestão de atletas (UC03)."""
+
+    curso = CursoSerializer(read_only=True)
+    ultimo_acesso = serializers.DateTimeField(source="last_login", read_only=True)
+
+    class Meta:
+        model = Atleta
+        fields = [
+            "id", "nome", "nusp", "email", "curso", "ano_ingresso", "telefone", "papel", "situacao",
+            "data_solicitacao", "data_avaliacao", "motivo_recusa", "ultimo_acesso",
+        ]
+
+
+class RecusaSerializer(serializers.Serializer):
+    motivo = serializers.CharField(
+        max_length=300, error_messages={"blank": "Informe o motivo da recusa.", "required": "Informe o motivo da recusa."}
+    )
