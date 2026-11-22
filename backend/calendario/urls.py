@@ -10,4 +10,6 @@ urlpatterns = [
     path("eventos/<int:pk>/ajuste/", views.AjustePresencaView.as_view(), name="evento-ajuste"),
     path("eventos/<int:pk>/presencas/", views.PresencaListCreateView.as_view(), name="evento-presencas"),
     path("eventos/<int:pk>/presencas/<int:atleta_id>/", views.PresencaDeleteView.as_view(), name="evento-presenca"),
+    path("frequencia/", views.FrequenciaView.as_view(), name="frequencia"),
+    path("frequencia/equipe/", views.FrequenciaEquipeView.as_view(), name="frequencia-equipe"),
 ]

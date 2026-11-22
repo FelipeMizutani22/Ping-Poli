@@ -13,3 +13,5 @@ export const removerPresenca = (id, atletaId) => apiFetch(`eventos/${id}/presenc
 export const buscarAjuste = (id) => apiFetch(`eventos/${id}/ajuste/`); // UC10 (Diretor)
 export const salvarAjuste = (id, presentes, justificativa) =>
   apiFetch(`eventos/${id}/ajuste/`, { method: "PUT", body: { presentes, justificativa } });
+export const buscarFrequencia = (params) => apiFetch("frequencia/", { params }); // UC11 · { mes } ou { inicio, fim }, [atleta]
+export const buscarFrequenciaEquipe = (params) => apiFetch("frequencia/equipe/", { params }); // UC11-a (Diretor)

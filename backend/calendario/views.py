@@ -13,6 +13,7 @@ from rest_framework.views import APIView
 from competicoes.models import Campeonato
 from contas.permissoes import AtletaAtivo, Diretor
 from contas.serializers import AtletaResumoSerializer
+from . import frequencia
 from .models import Evento, Presenca
 from .regras import dentro_da_janela, janela
 from .serializers import (
@@ -247,3 +248,36 @@ class AjustePresencaView(APIView):
         except ErroPresenca as e:
             return Response({"detail": str(e), "codigo": e.codigo}, status=e.status_http)
         return Response({"incluidos": incluidos, "removidos": removidos})
+
+
+class FrequenciaView(APIView):
+    """
+    GET frequencia/?mes=2026-11 | ?inicio=&fim= [&atleta=] (UC11)
+    O atleta vê só a própria frequência; o Diretor pode escolher qualquer atleta com `atleta=`.
+    """
+
+    def get(self, request):
+        try:
+            inicio, fim = frequencia.periodo(request.query_params, timezone.localdate())
+        except frequencia.PeriodoInvalido as e:
+            return Response({e.campo: [str(e)]}, status=400)
+        atleta = request.user
+        atleta_id = request.query_params.get("atleta")
+        if atleta_id and str(atleta_id) != str(request.user.id):
+            if not request.user.eh_diretor:   # UC11-f
+                self.permission_denied(request, message=Diretor.message)
+            atleta = get_object_or_404(get_user_model(), pk=atleta_id)
+        return Response(frequencia.relatorio_individual(atleta, inicio, fim))
+
+
+class FrequenciaEquipeView(APIView):
+    """GET frequencia/equipe/?mes= | ?inicio=&fim= (🛡 UC11-a): matriz atletas ativos × treinos realizados."""
+
+    permission_classes = [Diretor]
+
+    def get(self, request):
+        try:
+            inicio, fim = frequencia.periodo(request.query_params, timezone.localdate())
+        except frequencia.PeriodoInvalido as e:
+            return Response({e.campo: [str(e)]}, status=400)
+        return Response(frequencia.relatorio_equipe(inicio, fim))
