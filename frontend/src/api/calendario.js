@@ -1,5 +1,8 @@
 import { apiFetch } from "./client";
 
-// Trilha C · funções de calendario (03_CONTRATO_API). Ex.:
-// export const listarAlgo = (params) => apiFetch("caminho/", { params });
-export { apiFetch };
+// Trilha C · calendário e eventos (03_CONTRATO_API §3)
+export const listarCalendario = (params) => apiFetch("calendario/", { params }); // { inicio, fim, tipo }
+export const buscarEvento = (id) => apiFetch(`eventos/${id}/`);
+export const criarEvento = (dados) => apiFetch("eventos/", { method: "POST", body: dados });
+export const editarEvento = (id, dados) => apiFetch(`eventos/${id}/`, { method: "PATCH", body: dados });
+export const cancelarEvento = (id, motivo) => apiFetch(`eventos/${id}/cancelar/`, { method: "POST", body: { motivo } });

@@ -17,4 +17,16 @@
 .navbar-pingpoli { background: var(--pp-azul); }
 .navbar-pingpoli .navbar-brand span { color: var(--pp-amarelo); }
 .destaque-amarelo { border-left: 4px solid var(--pp-amarelo); }
+/* Calendário mensal (UC08 · C6) */
+.calendario-grade { table-layout: fixed; }
+.calendario-grade th { text-align: center; font-weight: 600; font-size: 0.85rem; }
+.calendario-grade td { height: 6.5rem; vertical-align: top; padding: 0.25rem; }
+.calendario-grade .dia-numero { font-size: 0.8rem; color: var(--bs-secondary-color); }
+.calendario-grade .dia-hoje .dia-numero { color: var(--pp-azul); font-weight: 700; }
+.calendario-grade .dia-hoje { background: rgba(245, 196, 0, 0.12); }
+.calendario-grade .item-calendario {
+  display: block; width: 100%; font-size: 0.72rem; text-align: left; margin-bottom: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.item-cancelado { text-decoration: line-through; opacity: 0.65; }
 .pagina-login { min-height: 100vh; background: linear-gradient(135deg, var(--pp-azul) 0%, var(--pp-azul-escuro) 100%); }
