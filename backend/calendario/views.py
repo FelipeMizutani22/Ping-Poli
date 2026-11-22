@@ -116,9 +116,13 @@ class EventoCreateView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         entrada = EventoEntradaSerializer(data=request.data)
         entrada.is_valid(raise_exception=True)
-        evento = criar_evento(request.user, entrada.validated_data)
-        evento = eventos_com_presenca(request.user).get(pk=evento.pk)
-        return Response(EventoSerializer(evento).data, status=status.HTTP_201_CREATED)
+        dados = dict(entrada.validated_data)
+        recorrencia, repetir_ate = dados.pop("recorrencia"), dados.pop("repetir_ate", None)
+        dados.pop("alcance")
+        evento = criar_evento(request.user, dados, repetir_ate if recorrencia == "semanal" else None)
+        saida = EventoSerializer(eventos_com_presenca(request.user).get(pk=evento.pk)).data
+        saida["ocorrencias"] = Evento.objects.filter(serie_id=evento.serie_id).count() if evento.serie_id else 1
+        return Response(saida, status=status.HTTP_201_CREATED)
 
 
 class EventoDetailView(generics.RetrieveAPIView):
@@ -141,12 +145,19 @@ class EventoDetailView(generics.RetrieveAPIView):
         evento = self.get_object()
         entrada = EventoEntradaSerializer(evento, data=request.data, partial=True)
         entrada.is_valid(raise_exception=True)
-        editar_evento(evento.id, entrada.validated_data)
+        dados = dict(entrada.validated_data)
+        alcance = dados.pop("alcance", "esta")
+        dados.pop("recorrencia", None)
+        dados.pop("repetir_ate", None)
+        try:
+            editar_evento(evento.id, dados, alcance)
+        except ValueError as e:   # mudar a data de várias ocorrências de uma vez
+            return Response({"data_evento": [str(e)]}, status=400)
         return Response(EventoSerializer(self.get_queryset().get(pk=evento.id)).data)
 
 
 class EventoCancelarView(APIView):
-    """POST eventos/{id}/cancelar/ { motivo } → 200 Evento (🛡 UC07-b) · 409 "ja_cancelado"."""
+    """POST eventos/{id}/cancelar/ { motivo, alcance } → 200 Evento (🛡 UC07-b) · 409 "ja_cancelado"."""
 
     permission_classes = [Diretor]
 
@@ -155,7 +166,7 @@ class EventoCancelarView(APIView):
         entrada = CancelarEventoSerializer(data=request.data)
         entrada.is_valid(raise_exception=True)
         try:
-            cancelar_evento(pk, entrada.validated_data["motivo"])
+            cancelar_evento(pk, entrada.validated_data["motivo"], entrada.validated_data["alcance"])
         except EventoJaCancelado as e:
             return Response({"detail": str(e), "codigo": "ja_cancelado"}, status=status.HTTP_409_CONFLICT)
         evento = eventos_com_presenca(request.user).get(pk=pk)

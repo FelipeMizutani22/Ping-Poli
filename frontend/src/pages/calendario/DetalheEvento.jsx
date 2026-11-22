@@ -42,6 +42,7 @@ export default function DetalheEvento() {
   const [removendo, setRemovendo] = useState(null);
   const [cancelando, setCancelando] = useState(false);
   const [motivo, setMotivo] = useState("");
+  const [alcanceCancelar, setAlcanceCancelar] = useState("esta");
   const [erroCancelar, setErroCancelar] = useState(null);
 
   if (carregando && !dados) return <Carregando />;
@@ -99,7 +100,7 @@ export default function DetalheEvento() {
     setErroCancelar(null);
     setEnviando(true);
     try {
-      await cancelarEvento(evento.id, motivo.trim());
+      await cancelarEvento(evento.id, motivo.trim(), alcanceCancelar);
       setCancelando(false);
       setMotivo("");
       await recarregar();
@@ -127,6 +128,7 @@ export default function DetalheEvento() {
           <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
             <Badge bg={CORES_TIPO_CALENDARIO[evento.tipo]}>{rotulo("tipoEvento", evento.tipo)}</Badge>
             <BadgeStatus status={evento.status} grupo="statusEvento" />
+            {evento.serie_id && <Badge bg="light" text="dark">Série semanal</Badge>}
           </div>
           <h1 className="h4">{evento.titulo}</h1>
           <p className="mb-1">
@@ -233,6 +235,15 @@ export default function DetalheEvento() {
             "{evento.titulo}" continuará no calendário marcado como cancelado, e os atletas ativos serão avisados.
           </p>
           <AlertaErro erro={erroCancelar && !erroCancelar.campos?.motivo ? erroCancelar : null} />
+          {evento.serie_id && (
+            <Form.Group className="mb-3">
+              <Form.Label>Este evento faz parte de uma série semanal. Cancelar:</Form.Label>
+              <Form.Check type="radio" id="cancelar-esta" name="alcance-cancelar" label="Somente esta ocorrência"
+                checked={alcanceCancelar === "esta"} onChange={() => setAlcanceCancelar("esta")} />
+              <Form.Check type="radio" id="cancelar-seguintes" name="alcance-cancelar" label="Esta e as seguintes"
+                checked={alcanceCancelar === "seguintes"} onChange={() => setAlcanceCancelar("seguintes")} />
+            </Form.Group>
+          )}
           <Form.Group controlId="motivo">
             <Form.Label>Motivo (opcional)</Form.Label>
             <Form.Control as="textarea" rows={3} maxLength={200} value={motivo}

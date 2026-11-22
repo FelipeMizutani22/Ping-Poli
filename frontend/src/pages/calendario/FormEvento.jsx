@@ -35,7 +35,10 @@ export default function FormEvento() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     tipo: "", titulo: "", data_evento: "", hora_inicio: "", hora_fim: "", local_evento: ultimoLocal(), descricao: "",
+    recorrencia: "nenhuma", repetir_ate: "",
   });
+  const [serieId, setSerieId] = useState(null);
+  const [alcance, setAlcance] = useState("esta");
   const [carregando, setCarregando] = useState(editando);
   const [erroCarga, setErroCarga] = useState(null);
   const [erro, setErro] = useState(null);
@@ -45,10 +48,13 @@ export default function FormEvento() {
   useEffect(() => {
     if (!editando) return;
     buscarEvento(id)
-      .then((e) => setForm({
-        tipo: e.tipo, titulo: e.titulo, data_evento: e.data_evento, hora_inicio: e.hora_inicio,
-        hora_fim: e.hora_fim, local_evento: e.local_evento, descricao: e.descricao,
-      }))
+      .then((e) => {
+        setForm({
+          tipo: e.tipo, titulo: e.titulo, data_evento: e.data_evento, hora_inicio: e.hora_inicio,
+          hora_fim: e.hora_fim, local_evento: e.local_evento, descricao: e.descricao,
+        });
+        setSerieId(e.serie_id);
+      })
       .catch(setErroCarga)
       .finally(() => setCarregando(false));
   }, [editando, id]);
@@ -71,11 +77,21 @@ export default function FormEvento() {
       local_evento: form.local_evento.trim(),
       descricao: form.descricao.trim(),
     };
+    // C11: recorrência só na criação; na edição de uma série, o alcance (UC07-a.2)
+    delete dados.recorrencia;
+    delete dados.repetir_ate;
+    if (editando) {
+      if (serieId) dados.alcance = alcance;
+    } else if (form.recorrencia === "semanal") {
+      dados.recorrencia = "semanal";
+      dados.repetir_ate = form.repetir_ate || null;
+    }
     setEnviando(true);
     try {
       const evento = editando ? await editarEvento(id, dados) : await criarEvento(dados);
       lembrarLocal(evento.local_evento);
-      navigate(`/eventos/${evento.id}`, editando ? undefined : { state: { mensagem: "Evento criado" } });
+      const mensagem = evento.ocorrencias > 1 ? `Evento criado (${evento.ocorrencias} ocorrências semanais)` : "Evento criado";
+      navigate(`/eventos/${evento.id}`, editando ? undefined : { state: { mensagem } });
     } catch (falha) {
       setErro(falha);
       setEnviando(false);
@@ -154,6 +170,41 @@ export default function FormEvento() {
               isInvalid={invalido("local_evento")} required />
             <ErroCampo erro={erro} campo="local_evento" />
           </Form.Group>
+
+          {!editando && (
+            <Row>
+              <Col sm={4}>
+                <Form.Group className="mb-3" controlId="recorrencia">
+                  <Form.Label>Recorrência</Form.Label>
+                  <Form.Select name="recorrencia" value={form.recorrencia} onChange={alterar}>
+                    <option value="nenhuma">Nenhuma</option>
+                    <option value="semanal">Semanal</option>
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+              {form.recorrencia === "semanal" && (
+                <Col sm={4}>
+                  <Form.Group className="mb-3" controlId="repetir_ate">
+                    <Form.Label>Repetir até</Form.Label>
+                    <Form.Control type="date" name="repetir_ate" value={form.repetir_ate} onChange={alterar}
+                      min={form.data_evento || hojeISO()} isInvalid={invalido("repetir_ate")} required />
+                    <Form.Text muted>No máximo 6 meses depois da data do evento.</Form.Text>
+                    <ErroCampo erro={erro} campo="repetir_ate" />
+                  </Form.Group>
+                </Col>
+              )}
+            </Row>
+          )}
+
+          {editando && serieId && (
+            <Form.Group className="mb-3">
+              <Form.Label>Este evento faz parte de uma série semanal. Aplicar a alteração a:</Form.Label>
+              <Form.Check type="radio" id="alcance-esta" name="alcance" label="Somente esta ocorrência"
+                checked={alcance === "esta"} onChange={() => setAlcance("esta")} />
+              <Form.Check type="radio" id="alcance-seguintes" name="alcance" label="Esta e as seguintes"
+                checked={alcance === "seguintes"} onChange={() => setAlcance("seguintes")} />
+            </Form.Group>
+          )}
 
           <Form.Group className="mb-4" controlId="descricao">
             <Form.Label>Descrição (opcional)</Form.Label>

@@ -1,5 +1,5 @@
 """Regras de negócio do calendário e da presença (UC07, UC09, UC10 · 05_REGRAS_DE_NEGOCIO §4 Calendário)."""
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
@@ -48,37 +48,84 @@ def _enviar_emails(assunto, corpo):
         enviar_email(atleta.email, assunto, corpo)
 
 
-def criar_evento(diretor, dados):
-    """UC07 fluxo básico: grava o evento Agendado."""
-    return Evento.objects.create(criado_por=diretor, **dados)
+MAX_OCORRENCIAS = 27   # UC07, requerimentos especiais: série de até 6 meses, no máximo 27 ocorrências
+ALCANCES = ("esta", "seguintes")
+MSG_DATA_NA_SERIE = "Para mudar a data, edite somente esta ocorrência"
 
 
 @transaction.atomic
-def editar_evento(evento_id, dados):
-    """UC07-a: grava as alterações; se data, horário ou local mudaram, avisa os atletas ativos por e-mail."""
+def criar_evento(diretor, dados, repetir_ate=None):
+    """
+    UC07 fluxo básico: grava o evento Agendado. Com `repetir_ate` (recorrência semanal, C11),
+    grava uma ocorrência por semana até essa data, todas com o mesmo `serie_id` (o id da primeira).
+    """
+    primeiro = Evento.objects.create(criado_por=diretor, **dados)
+    if repetir_ate:
+        datas = []
+        dia = primeiro.data_evento + timedelta(weeks=1)
+        while dia <= repetir_ate and len(datas) + 1 < MAX_OCORRENCIAS:
+            datas.append(dia)
+            dia += timedelta(weeks=1)
+        Evento.objects.bulk_create([
+            Evento(criado_por=diretor, serie_id=primeiro.id, **{**dados, "data_evento": d}) for d in datas
+        ])
+        primeiro.serie_id = primeiro.id
+        primeiro.save(update_fields=["serie_id"])
+    return primeiro
+
+
+def _alvos(evento, alcance, so_agendados=False):
+    """A ocorrência escolhida ou, em `seguintes`, ela e as próximas da mesma série (UC07-a.2 / b.2)."""
+    if alcance != "seguintes" or not evento.serie_id:
+        return [evento]
+    qs = Evento.objects.select_for_update().filter(serie_id=evento.serie_id, data_evento__gte=evento.data_evento)
+    if so_agendados:
+        qs = qs.filter(status=Evento.Status.AGENDADO)
+    return list(qs.order_by("data_evento"))
+
+
+@transaction.atomic
+def editar_evento(evento_id, dados, alcance="esta"):
+    """
+    UC07-a: grava as alterações (na ocorrência ou nela e nas seguintes da série).
+    Se data, horário ou local mudaram, avisa os atletas ativos por e-mail (uma mensagem só).
+    """
     evento = Evento.objects.select_for_update().get(pk=evento_id)
+    alvos = _alvos(evento, alcance)
+    if len(alvos) > 1 and "data_evento" in dados and dados["data_evento"] != evento.data_evento:
+        raise ValueError(MSG_DATA_NA_SERIE)
     mudou = any(campo in dados and dados[campo] != getattr(evento, campo) for campo in CAMPOS_QUE_AVISAM)
-    for campo, valor in dados.items():
-        setattr(evento, campo, valor)
-    evento.save()
+    for alvo in alvos:
+        for campo, valor in dados.items():
+            if campo == "data_evento" and alvo.pk != evento.pk:
+                continue   # cada ocorrência mantém a própria data
+            setattr(alvo, campo, valor)
+        alvo.save()
     if mudou:
+        sufixo = f" (e as {len(alvos) - 1} ocorrências seguintes)" if len(alvos) > 1 else ""
         transaction.on_commit(lambda: _enviar_emails(
-            f"[PingPoli] Evento alterado: {evento.titulo}", f"O evento foi alterado: {_descrever(evento)}."
+            f"[PingPoli] Evento alterado: {evento.titulo}", f"O evento foi alterado: {_descrever(evento)}{sufixo}."
         ))
     return evento
 
 
 @transaction.atomic
-def cancelar_evento(evento_id, motivo=""):
-    """UC07-b: status Cancelado (continua visível), notifica e manda e-mail aos atletas ativos."""
+def cancelar_evento(evento_id, motivo="", alcance="esta"):
+    """UC07-b: status Cancelado (continua visível), notifica e manda e-mail aos atletas ativos uma vez só."""
     evento = Evento.objects.select_for_update().get(pk=evento_id)
     if evento.status == Evento.Status.CANCELADO:
         raise EventoJaCancelado()
-    evento.status = Evento.Status.CANCELADO
-    evento.motivo_cancelamento = motivo
-    evento.save(update_fields=["status", "motivo_cancelamento"])
+    alvos = _alvos(evento, alcance, so_agendados=True)
+    for alvo in alvos:
+        alvo.status = Evento.Status.CANCELADO
+        alvo.motivo_cancelamento = motivo
+        alvo.save(update_fields=["status", "motivo_cancelamento"])
 
-    mensagem = f"Evento cancelado: {evento.titulo} ({evento.data_evento:%d/%m/%Y})"
+    if len(alvos) > 1:
+        mensagem = (f"Eventos cancelados: {evento.titulo}, de {alvos[0].data_evento:%d/%m/%Y} "
+                    f"a {alvos[-1].data_evento:%d/%m/%Y} ({len(alvos)} ocorrências)")
+    else:
+        mensagem = f"Evento cancelado: {evento.titulo} ({evento.data_evento:%d/%m/%Y})"
     if motivo:
         mensagem += f". Motivo: {motivo}"
     for atleta in _atletas_ativos():

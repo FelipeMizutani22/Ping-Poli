@@ -5,7 +5,8 @@ export const listarCalendario = (params) => apiFetch("calendario/", { params });
 export const buscarEvento = (id) => apiFetch(`eventos/${id}/`);
 export const criarEvento = (dados) => apiFetch("eventos/", { method: "POST", body: dados });
 export const editarEvento = (id, dados) => apiFetch(`eventos/${id}/`, { method: "PATCH", body: dados });
-export const cancelarEvento = (id, motivo) => apiFetch(`eventos/${id}/cancelar/`, { method: "POST", body: { motivo } });
+export const cancelarEvento = (id, motivo, alcance = "esta") =>
+  apiFetch(`eventos/${id}/cancelar/`, { method: "POST", body: { motivo, alcance } }); // alcance: "esta" | "seguintes"
 export const listarPresencas = (id) => apiFetch(`eventos/${id}/presencas/`); // { evento, janela, dentro_da_janela, presencas }
 export const registrarPresencas = (id, atletas = []) =>
   apiFetch(`eventos/${id}/presencas/`, { method: "POST", body: { atletas } }); // [] = eu mesmo
