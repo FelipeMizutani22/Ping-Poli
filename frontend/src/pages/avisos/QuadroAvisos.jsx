@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, Badge, Card, Col, Form, ListGroup, Nav, Pagination, Row } from "react-bootstrap";
+import { Alert, Badge, Button, Card, Col, Form, ListGroup, Nav, Pagination, Row } from "react-bootstrap";
 import { Link, useLocation } from "react-router-dom";
 
 import { listarAvisos } from "../../api/avisos";
@@ -44,7 +44,10 @@ export default function QuadroAvisos() {
   return (
     <Card>
       <Card.Body>
-        <h1 className="h4 mb-3">Quadro de avisos</h1>
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h1 className="h4 mb-0">Quadro de avisos</h1>
+          {ehDiretor && <Button as={Link} to="/avisos/novo">Novo aviso</Button>}
+        </div>
 
         {location.state?.mensagem && <Alert variant="warning">{location.state.mensagem}</Alert>}
 
