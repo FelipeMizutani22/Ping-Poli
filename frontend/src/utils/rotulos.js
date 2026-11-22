@@ -4,6 +4,7 @@ export const ROTULOS = {
   papel: { atleta: "Atleta", diretor: "Diretor de Modalidade" },
   categoriaAviso: { geral: "Geral", treino: "Treino", campeonato: "Campeonato", urgente: "Urgente" },
   tipoEvento: { treino: "Treino", atividade: "Atividade" },
+  tipoCalendario: { treino: "Treino", atividade: "Atividade", campeonato: "Campeonato" },
   statusEvento: { agendado: "Agendado", cancelado: "Cancelado" },
   statusCampeonato: {
     planejado: "Planejado",
@@ -35,6 +36,13 @@ export const CORES_STATUS = {
   cancelada: "secondary",
   cancelado: "secondary",
   inativa: "secondary",
+};
+
+// Cor de cada tipo no calendário (UC08 passo 2: "coloridos por tipo" + legenda)
+export const CORES_TIPO_CALENDARIO = {
+  treino: "primary",
+  atividade: "info",
+  campeonato: "warning",
 };
 
 // Cor da etiqueta de categoria do aviso (UC06 passo 2: "etiqueta colorida")

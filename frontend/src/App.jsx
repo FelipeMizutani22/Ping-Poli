@@ -7,6 +7,7 @@ import NaoEncontrada from "./pages/NaoEncontrada";
 import DetalheAviso from "./pages/avisos/DetalheAviso";
 import FormAviso from "./pages/avisos/FormAviso";
 import QuadroAvisos from "./pages/avisos/QuadroAvisos";
+import AjustarPresencas from "./pages/calendario/AjustarPresencas";
 import Calendario from "./pages/calendario/Calendario";
 import DetalheEvento from "./pages/calendario/DetalheEvento";
 import FormEvento from "./pages/calendario/FormEvento";
@@ -61,6 +62,7 @@ export default function App() {
             <Route path="/avisos/:id/editar" element={<FormAviso />} />
             <Route path="/eventos/novo" element={<FormEvento />} />
             <Route path="/eventos/:id/editar" element={<FormEvento />} />
+            <Route path="/frequencia/ajustar" element={<AjustarPresencas />} />
             <Route path="/campeonatos/novo" element={<FormCampeonato />} />
             <Route path="/campeonatos/:id/editar" element={<FormCampeonato />} />
             <Route path="/moderacao" element={<Moderacao />} />
