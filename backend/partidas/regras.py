@@ -83,3 +83,37 @@ def resultado(sets):
         "pontos_atleta": sum(s["pontos_atleta"] for s in sets),
         "pontos_adversario": sum(s["pontos_adversario"] for s in sets),
     }
+
+
+
+def gerar_placar_aleatorio(formato, rng, vence_atleta):
+    """
+    Gera um placar SEMPRE válido, para o seed_demo (F3.3).
+
+    rng: um random.Random(semente). Com a mesma semente, o seed sai igual toda vez.
+    vence_atleta: True -> o registrante vence a partida; False -> o adversário vence.
+    """
+    alvo = sets_para_vencer(formato)
+    sets_do_perdedor = rng.randint(0, alvo - 1)
+    total = alvo + sets_do_perdedor
+
+    # O último set é sempre do vencedor; os sets do perdedor ficam espalhados antes dele.
+    posicoes_do_perdedor = set(rng.sample(range(total - 1), sets_do_perdedor))
+
+    sets = []
+    for i in range(total):
+        pontos_vencedor, pontos_perdedor = _pontos_de_um_set(rng)
+        atleta_venceu_o_set = (i not in posicoes_do_perdedor) == vence_atleta
+        if atleta_venceu_o_set:
+            sets.append({"pontos_atleta": pontos_vencedor, "pontos_adversario": pontos_perdedor})
+        else:
+            sets.append({"pontos_atleta": pontos_perdedor, "pontos_adversario": pontos_vencedor})
+    return sets
+
+
+def _pontos_de_um_set(rng):
+    """Pontos (vencedor, perdedor) de um set válido: 80% normal (11 a 0–9), 20% prorrogação."""
+    if rng.random() < 0.8:
+        return 11, rng.randint(0, 9)
+    perdedor = rng.randint(10, 14)
+    return perdedor + 2, perdedor
