@@ -45,6 +45,14 @@ export const CORES_TIPO_CALENDARIO = {
   campeonato: "warning",
 };
 
+// Cor da etiqueta de categoria do aviso (UC06 passo 2: "etiqueta colorida")
+export const CORES_CATEGORIA_AVISO = {
+  geral: "secondary",
+  treino: "primary",
+  campeonato: "success",
+  urgente: "danger",
+};
+
 export function rotulo(grupo, valor) {
   return ROTULOS[grupo]?.[valor] ?? valor;
 }
