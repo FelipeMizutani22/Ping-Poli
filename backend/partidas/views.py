@@ -7,20 +7,24 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from contas.permissoes import Diretor
-from .models import AdversarioExterno, Partida
+from .models import AdversarioExterno, HistoricoPartida, Partida
 from .serializers import (
     AdversarioExternoListaSerializer,
     AdversarioExternoSerializer,
     ContestarSerializer,
+    HistoricoPartidaSerializer,
+    ModerarSerializer,
     PartidaSerializer,
     RegistrarPartidaSerializer,
 )
 from .servicos import (
     AdversarioJaExiste,
+    ModeracaoInvalida,
     PartidaNaoPendente,
     cadastrar_adversario_externo,
     confirmar_partida,
     contestar_partida,
+    moderar_partida,
     registrar_partida,
 )
 
@@ -170,3 +174,43 @@ class PartidaContestarView(_RespostaDoAdversarioView):
         entrada.is_valid(raise_exception=True)
         contestar_partida(partida.id, request.user, entrada.validated_data["justificativa"],
                           entrada.validated_data["sets"])
+
+
+class PartidaModerarView(APIView):
+    """POST partidas/{id}/moderar/ { decisao, motivo, dados? } → 200 Partida (UC17, só Diretor)."""
+
+    permission_classes = [Diretor]
+
+    def post(self, request, pk):
+        partida = get_object_or_404(Partida, pk=pk)
+        entrada = ModerarSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        decisao = entrada.validated_data["decisao"]
+
+        dados = None
+        if decisao == "editar":
+            edicao = RegistrarPartidaSerializer(
+                data=entrada.validated_data.get("dados") or {},
+                context={"request": request, "registrante": partida.atleta},
+            )
+            if not edicao.is_valid():
+                return Response({"dados": edicao.errors}, status=400)
+            dados = edicao.validated_data
+
+        try:
+            moderar_partida(pk, request.user, decisao, entrada.validated_data["motivo"], dados)
+        except ModeracaoInvalida as e:
+            return Response({"detail": str(e), "codigo": e.codigo}, status=e.status_http)
+        return Response(PartidaSerializer(partidas_com_relacoes().get(pk=pk)).data)
+
+
+class PartidaHistoricoView(generics.ListAPIView):
+    """GET partidas/{id}/historico/ → versões anteriores, da mais recente para a mais antiga (UC17-f, só Diretor)."""
+
+    permission_classes = [Diretor]
+    serializer_class = HistoricoPartidaSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        get_object_or_404(Partida, pk=self.kwargs["pk"])
+        return HistoricoPartida.objects.filter(partida_id=self.kwargs["pk"]).select_related("alterado_por")

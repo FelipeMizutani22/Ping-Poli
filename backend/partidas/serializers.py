@@ -1,10 +1,12 @@
+import json
+
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework import serializers
 
 from competicoes.models import Campeonato, Categoria
 from contas.serializers import AtletaResumoSerializer
-from .models import AdversarioExterno, Partida
+from .models import AdversarioExterno, HistoricoPartida, Partida
 from .regras import resultado, validar_placar
 
 MSG_DATA_FUTURA = "A data da partida não pode ser futura"
@@ -118,6 +120,16 @@ class ContestarSerializer(serializers.Serializer):
         return sets
 
 
+# ---------- Moderar partida (entrada do POST partidas/{id}/moderar/) ----------
+
+class ModerarSerializer(serializers.Serializer):
+    """UC17: decisão + motivo (10 a 300). Em "editar", os dados são validados à parte, com as regras do UC15."""
+
+    decisao = serializers.ChoiceField(choices=["manter", "aceitar_proposto", "editar", "remover"])
+    motivo = serializers.CharField(min_length=10, max_length=300, trim_whitespace=True)
+    dados = serializers.DictField(required=False)
+
+
 # ---------- Partida (saída, formato "Partida" do contrato) ----------
 
 def _set_dto(s):
@@ -196,3 +208,17 @@ class PartidaSerializer(serializers.ModelSerializer):
             "motivo_decisao": c.motivo_decisao,
             "data_resolucao": _data_hora(c.data_resolucao),
         }
+
+
+class HistoricoPartidaSerializer(serializers.ModelSerializer):
+    """Uma versão anterior da partida (UC17-f)."""
+
+    alterado_por = AtletaResumoSerializer(read_only=True)
+    valores_anteriores = serializers.SerializerMethodField()
+
+    class Meta:
+        model = HistoricoPartida
+        fields = ["id", "alterado_por", "motivo", "valores_anteriores", "data_alteracao"]
+
+    def get_valores_anteriores(self, obj):
+        return json.loads(obj.valores_anteriores) if obj.valores_anteriores else None
