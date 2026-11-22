@@ -59,10 +59,9 @@ class SolicitacaoCadastroSerializer(serializers.Serializer):
         return " ".join(valor.split())  # tira espaços repetidos
 
     def validate_email(self, valor):
-        valor = valor.strip().lower()
-        if not valor.endswith("@usp.br"):
-            raise serializers.ValidationError("Use o seu e-mail institucional (@usp.br).")
-        return valor
+        # Qualquer e-mail válido: atletas formados perdem o @usp.br. Quem garante que a pessoa é
+        # da equipe é a aprovação do Diretor (UC03), não o domínio do e-mail.
+        return valor.strip().lower()
 
     def validate_ano_ingresso(self, valor):
         atual = timezone.localdate().year
