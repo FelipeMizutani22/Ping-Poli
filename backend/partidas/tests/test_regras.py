@@ -1,7 +1,8 @@
+import random
+
 from django.test import SimpleTestCase
 
-from partidas.regras import resultado, sets_para_vencer, validar_placar, validar_set
-
+from partidas.regras import gerar_placar_aleatorio, resultado, sets_para_vencer, validar_placar, validar_set
 
 def S(pontos_atleta, pontos_adversario):
     """Atalho para montar um set no formato do contrato da API."""
@@ -107,3 +108,26 @@ class ResultadoTests(SimpleTestCase):
         self.assertEqual(r["vencedor"], "adversario")
         self.assertEqual((r["sets_atleta"], r["sets_adversario"]), (0, 2))
         self.assertEqual((r["pontos_atleta"], r["pontos_adversario"]), (15, 23))
+
+
+class GerarPlacarAleatorioTests(SimpleTestCase):
+    def test_1000_placares_sao_todos_validos(self):
+        rng = random.Random(2026)
+        for i in range(1000):
+            formato = rng.choice([3, 5, 7])
+            vence_atleta = rng.random() < 0.5
+            sets = gerar_placar_aleatorio(formato, rng, vence_atleta)
+            with self.subTest(i=i, formato=formato, sets=sets):
+                self.assertEqual(validar_placar(sets, formato), [])
+                esperado = "atleta" if vence_atleta else "adversario"
+                self.assertEqual(resultado(sets)["vencedor"], esperado)
+
+    def test_mesma_semente_gera_o_mesmo_placar(self):
+        a = gerar_placar_aleatorio(5, random.Random(7), True)
+        b = gerar_placar_aleatorio(5, random.Random(7), True)
+        self.assertEqual(a, b)
+
+    def test_gera_partidas_de_todos_os_tamanhos(self):
+        rng = random.Random(1)
+        tamanhos = {len(gerar_placar_aleatorio(5, rng, True)) for _ in range(200)}
+        self.assertEqual(tamanhos, {3, 4, 5})
