@@ -1,18 +1,30 @@
 """Views do app partidas: adversários externos (UC15-a), registro e listagem de partidas (UC15)."""
 from django.db.models import Count, Q
+from django.shortcuts import get_object_or_404
 from django.utils.dateparse import parse_date
 from rest_framework import generics, status
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from contas.permissoes import Diretor
 from .models import AdversarioExterno, Partida
 from .serializers import (
     AdversarioExternoListaSerializer,
     AdversarioExternoSerializer,
+    ContestarSerializer,
     PartidaSerializer,
     RegistrarPartidaSerializer,
 )
-from .servicos import AdversarioJaExiste, cadastrar_adversario_externo, registrar_partida
+from .servicos import (
+    AdversarioJaExiste,
+    PartidaNaoPendente,
+    cadastrar_adversario_externo,
+    confirmar_partida,
+    contestar_partida,
+    registrar_partida,
+)
+
+MSG_SO_ADVERSARIO = "Apenas o adversário indicado na partida pode confirmá-la ou contestá-la"
 
 
 class AdversarioExternoListView(generics.ListCreateAPIView):
@@ -127,3 +139,34 @@ class PartidaDetailView(generics.RetrieveAPIView):
         if usuario.eh_diretor:
             return qs
         return qs.filter(Q(atleta=usuario) | Q(adversario=usuario))
+
+
+class _RespostaDoAdversarioView(APIView):
+    """Base do confirmar/contestar: só o adversário responde, e só enquanto a partida está Pendente."""
+
+    def post(self, request, pk):
+        partida = get_object_or_404(Partida, pk=pk)
+        if partida.adversario_id != request.user.id:
+            return Response({"detail": MSG_SO_ADVERSARIO, "codigo": "nao_e_adversario"}, status=403)
+        try:
+            self.responder(request, partida)
+        except PartidaNaoPendente as e:
+            return Response({"detail": str(e), "codigo": "nao_pendente", "status": e.status}, status=409)
+        return Response(PartidaSerializer(partidas_com_relacoes().get(pk=pk)).data)
+
+
+class PartidaConfirmarView(_RespostaDoAdversarioView):
+    """POST partidas/{id}/confirmar/ → 200 Partida (UC16)."""
+
+    def responder(self, request, partida):
+        confirmar_partida(partida.id, request.user)
+
+
+class PartidaContestarView(_RespostaDoAdversarioView):
+    """POST partidas/{id}/contestar/ { justificativa, sets } → 200 Partida (UC16-a)."""
+
+    def responder(self, request, partida):
+        entrada = ContestarSerializer(data=request.data, context={"partida": partida})
+        entrada.is_valid(raise_exception=True)
+        contestar_partida(partida.id, request.user, entrada.validated_data["justificativa"],
+                          entrada.validated_data["sets"])

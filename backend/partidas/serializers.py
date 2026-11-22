@@ -68,7 +68,8 @@ class RegistrarPartidaSerializer(serializers.Serializer):
 
     def validate(self, dados):
         erros = {}
-        usuario = self.context["request"].user
+        # Na moderação (UC17) quem edita é o Diretor, mas o registrante continua sendo o jogador original.
+        usuario = self.context.get("registrante") or self.context["request"].user
 
         # Adversário: exatamente um dos dois, conforme o tipo (constraint {xor} do ER)
         if dados["tipo_adversario"] == Partida.TipoAdversario.POLI:
@@ -99,6 +100,22 @@ class RegistrarPartidaSerializer(serializers.Serializer):
         if erros:
             raise serializers.ValidationError(erros)
         return dados
+
+
+# ---------- Contestar partida (entrada do POST partidas/{id}/contestar/) ----------
+
+class ContestarSerializer(serializers.Serializer):
+    """UC16-a: justificativa obrigatória e placar proposto opcional, com as regras do UC15."""
+
+    justificativa = serializers.CharField(min_length=10, max_length=500, trim_whitespace=True)
+    sets = SetEntradaSerializer(many=True, required=False, default=list)
+
+    def validate_sets(self, sets):
+        if sets:
+            erros = validar_placar(sets, self.context["partida"].formato)
+            if erros:
+                raise serializers.ValidationError(erros)
+        return sets
 
 
 # ---------- Partida (saída, formato "Partida" do contrato) ----------
