@@ -204,3 +204,137 @@ def recentes(linhas):
         }
         for linha in ordenadas[:10]
     ]
+
+def ranking_equipe(atletas_com_linhas):
+    """Recebe itens com 'atleta' (resumo) e 'linhas' já filtradas."""
+    ranking = []
+
+    for item in atletas_com_linhas:
+        resumo = indicadores(item["linhas"])
+        if resumo["partidas"] < 5:
+            continue
+
+        ranking.append({
+            "atleta": dict(item["atleta"]),
+            "partidas": resumo["partidas"],
+            "vitorias": resumo["vitorias"],
+            "pct_vitorias": resumo["pct_vitorias"],
+            "saldo_sets": resumo["saldo_sets"],
+        })
+
+    ranking.sort(key=lambda item: (
+        -item["pct_vitorias"],
+        -item["saldo_sets"],
+        -item["partidas"],
+        item["atleta"]["nome"],
+    ))
+
+    return [
+        {"posicao": posicao, **item}
+        for posicao, item in enumerate(ranking, start=1)
+    ]
+
+
+def partidas_por_mes(linhas, inicio, fim):
+    """Conta jogos únicos, mesmo quando aparecem para os dois atletas."""
+    unicas = {}
+    for linha in linhas:
+        unicas.setdefault(linha["partida_id"], linha)
+
+    return [
+        {"mes": mes["mes"], "partidas": mes["partidas"]}
+        for mes in evolucao_mensal(list(unicas.values()), inicio, fim)
+    ]
+
+def confronto_direto(linhas, a, b, *, pendentes_entre_eles=0):
+    """Calcula o confronto com linhas confirmadas na perspectiva de A.
+
+    As linhas devem conter apenas jogos Poli entre A e B, já filtrados
+    pelo período. A consulta ao banco será responsável por essa seleção.
+    """
+    if a["id"] == b["id"]:
+        raise ValueError("Escolha um atleta diferente")
+
+    ordenadas = sorted(
+        linhas,
+        key=lambda linha: (linha["data"], linha["partida_id"]),
+    )
+
+    # Cada chamada recebe uma única linha para reaproveitar o formato
+    # PartidaPerspectiva, sem aplicar o limite de dez ao histórico.
+    partidas = [recentes([linha])[0] for linha in ordenadas]
+
+    linhas_b = [
+        {
+            **linha,
+            "adversario_id": a["id"],
+            "adversario_nome": a["nome"],
+            "sets_pro": linha["sets_contra"],
+            "sets_contra": linha["sets_pro"],
+            "pontos_pro": linha["pontos_contra"],
+            "pontos_contra": linha["pontos_pro"],
+            "venceu": not linha["venceu"],
+        }
+        for linha in ordenadas
+    ]
+
+    resumo_a = indicadores(ordenadas)
+    resumo_b = indicadores(linhas_b)
+
+    def maior_vitoria(venceu_a):
+        candidatas = [
+            linha for linha in ordenadas
+            if linha["venceu"] == venceu_a
+        ]
+        if not candidatas:
+            return None
+
+        maior = max(
+            candidatas,
+            key=lambda linha: (
+                abs(linha["sets_pro"] - linha["sets_contra"]),
+                linha["data"],
+                linha["partida_id"],
+            ),
+        )
+        # Até a maior vitória de B é exibida na perspectiva de A.
+        return recentes([maior])[0]
+
+    acumulado = []
+    vitorias_a = 0
+    vitorias_b = 0
+
+    for linha in ordenadas:
+        if linha["venceu"]:
+            vitorias_a += 1
+        else:
+            vitorias_b += 1
+
+        acumulado.append({
+            "data": linha["data"],
+            "vitorias_a": vitorias_a,
+            "vitorias_b": vitorias_b,
+        })
+
+    return {
+        "a": dict(a),
+        "b": dict(b),
+        "retrospecto": {
+            "vitorias_a": resumo_a["vitorias"],
+            "vitorias_b": resumo_b["vitorias"],
+            "sets_a": resumo_a["sets_pro"],
+            "sets_b": resumo_b["sets_pro"],
+            "pontos_a": resumo_a["pontos_pro"],
+            "pontos_b": resumo_b["pontos_pro"],
+            "pct_a": resumo_a["pct_vitorias"],
+            "pct_b": resumo_b["pct_vitorias"],
+        },
+        "ultima_partida": partidas[-1] if partidas else None,
+        "maior_vitoria_a": maior_vitoria(True),
+        "maior_vitoria_b": maior_vitoria(False),
+        "partidas": partidas,
+        "acumulado": acumulado,
+        "indicadores_a": resumo_a,
+        "indicadores_b": resumo_b,
+        "pendentes_entre_eles": pendentes_entre_eles,
+    }
