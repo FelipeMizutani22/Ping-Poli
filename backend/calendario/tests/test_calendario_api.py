@@ -4,6 +4,7 @@ from io import StringIO
 
 from django.core import mail
 from django.core.management import call_command
+from django.db import models
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework.authtoken.models import Token
@@ -200,3 +201,9 @@ class SeedCalendarioTests(TestCase):
         self.assertEqual(hoje.data_evento, HOJE())
         self.assertGreater(hoje.hora_fim, hoje.hora_inicio)
         self.assertTrue(Evento.objects.filter(tipo="atividade", data_evento=HOJE() + timedelta(days=10)).exists())
+
+    def test_presencas_so_nos_treinos_passados(self):
+        call_command("seed_demo", stdout=StringIO())
+        self.assertTrue(Presenca.objects.filter(atleta__email="ana.lima@usp.br").exists())
+        self.assertFalse(Presenca.objects.filter(evento__data_evento__gte=HOJE()).exists())
+        self.assertTrue(Presenca.objects.exclude(registrado_por=models.F("atleta")).exists())   # registradas por colegas

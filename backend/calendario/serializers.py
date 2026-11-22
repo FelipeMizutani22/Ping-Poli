@@ -63,3 +63,17 @@ class EventoEntradaSerializer(serializers.ModelSerializer):
 
 class CancelarEventoSerializer(serializers.Serializer):
     motivo = serializers.CharField(max_length=200, required=False, allow_blank=True, default="", trim_whitespace=True)
+
+
+class PresencaSerializer(serializers.Serializer):
+    """Item da lista de presentes (UC09 passo 2): quem, quem registrou e quando."""
+
+    atleta = AtletaResumoSerializer()
+    registrado_por = AtletaResumoSerializer()
+    data_registro = serializers.DateTimeField()
+
+
+class RegistrarPresencaSerializer(serializers.Serializer):
+    """{ "atletas": [5, 8] } · lista vazia ou ausente = o próprio usuário."""
+
+    atletas = serializers.ListField(child=serializers.IntegerField(min_value=1), required=False, default=list)

@@ -12,13 +12,24 @@ from rest_framework.views import APIView
 from competicoes.models import Campeonato
 from contas.permissoes import AtletaAtivo, Diretor
 from .models import Evento, Presenca
+from .regras import dentro_da_janela, janela
 from .serializers import (
     FORMATO_HORA,
     CancelarEventoSerializer,
     EventoEntradaSerializer,
     EventoSerializer,
+    PresencaSerializer,
+    RegistrarPresencaSerializer,
 )
-from .servicos import EventoJaCancelado, cancelar_evento, criar_evento, editar_evento
+from .servicos import (
+    ErroPresenca,
+    EventoJaCancelado,
+    cancelar_evento,
+    criar_evento,
+    editar_evento,
+    registrar_presencas,
+    remover_presenca,
+)
 
 TIPOS_CALENDARIO = ("treino", "atividade", "campeonato")
 
@@ -141,3 +152,44 @@ class EventoCancelarView(APIView):
             return Response({"detail": str(e), "codigo": "ja_cancelado"}, status=status.HTTP_409_CONFLICT)
         evento = eventos_com_presenca(request.user).get(pk=pk)
         return Response(EventoSerializer(evento).data)
+
+
+class PresencaListCreateView(APIView):
+    """
+    GET  eventos/{id}/presencas/ → { evento, janela, dentro_da_janela, presencas } (👤 UC09 passo 2)
+    POST eventos/{id}/presencas/ { atletas } → 201 { registrados, ja_presentes } (👤 UC09)
+         409 "fora_da_janela" / "evento_cancelado" · 400 "nao_e_treino" / "atleta_invalido"
+    """
+
+    def get(self, request, pk):
+        evento = get_object_or_404(eventos_com_presenca(request.user), pk=pk)
+        inicio, fim = janela(evento)
+        presencas = evento.presencas.select_related("atleta", "registrado_por").order_by("data_registro")
+        return Response({
+            "evento": EventoSerializer(evento).data,
+            "janela": {"inicio": inicio.strftime(FORMATO_HORA), "fim": fim.strftime(FORMATO_HORA)},
+            "dentro_da_janela": dentro_da_janela(evento),
+            "presencas": PresencaSerializer(presencas, many=True).data,
+        })
+
+    def post(self, request, pk):
+        get_object_or_404(Evento, pk=pk)
+        entrada = RegistrarPresencaSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        try:
+            registrados, ja_presentes = registrar_presencas(pk, request.user, entrada.validated_data["atletas"])
+        except ErroPresenca as e:
+            return Response({"detail": str(e), "codigo": e.codigo}, status=e.status_http)
+        return Response({"registrados": registrados, "ja_presentes": ja_presentes}, status=status.HTTP_201_CREATED)
+
+
+class PresencaDeleteView(APIView):
+    """DELETE eventos/{id}/presencas/{atleta_id}/ → 204 (👤 autor dentro da janela, UC09-b · 🛡 sempre, UC10)."""
+
+    def delete(self, request, pk, atleta_id):
+        get_object_or_404(Presenca, evento_id=pk, atleta_id=atleta_id)
+        try:
+            remover_presenca(pk, atleta_id, request.user)
+        except ErroPresenca as e:
+            return Response({"detail": str(e), "codigo": e.codigo}, status=e.status_http)
+        return Response(status=status.HTTP_204_NO_CONTENT)
