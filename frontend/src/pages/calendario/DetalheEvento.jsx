@@ -1,9 +1,16 @@
 import { useState } from "react";
-import { Alert, Badge, Button, Card, CloseButton, Modal, Stack, Table } from "react-bootstrap";
-import { Link, useParams } from "react-router-dom";
+import { Alert, Badge, Button, Card, CloseButton, Form, Modal, Stack, Table } from "react-bootstrap";
+import { Link, useLocation, useParams } from "react-router-dom";
 
-import { buscarEvento, listarPresencas, registrarPresencas, removerPresenca } from "../../api/calendario";
+import {
+  buscarEvento,
+  cancelarEvento,
+  listarPresencas,
+  registrarPresencas,
+  removerPresenca,
+} from "../../api/calendario";
 import AlertaErro from "../../components/AlertaErro";
+import ErroCampo from "../../components/ErroCampo";
 import BadgeStatus from "../../components/BadgeStatus";
 import BuscaAtleta from "../../components/BuscaAtleta";
 import Carregando from "../../components/Carregando";
@@ -21,17 +28,21 @@ const msgForaDaJanela = (j) =>
 // adicionar colegas, ver quem registrou e remover um registro feito por engano.
 export default function DetalheEvento() {
   const { id } = useParams();
+  const location = useLocation();
   const { usuario, ehDiretor } = useAuth();
   const { dados, carregando, erro, recarregar } = useApi(async () => {
     const evento = await buscarEvento(id);
     return evento.tipo === "treino" ? listarPresencas(id) : { evento };
   }, [id]);
-  const [mensagem, setMensagem] = useState(null);
+  const [mensagem, setMensagem] = useState(location.state?.mensagem || null); // ex.: "Evento criado"
   const [erroAcao, setErroAcao] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [adicionando, setAdicionando] = useState(false);
   const [colegas, setColegas] = useState([]);
   const [removendo, setRemovendo] = useState(null);
+  const [cancelando, setCancelando] = useState(false);
+  const [motivo, setMotivo] = useState("");
+  const [erroCancelar, setErroCancelar] = useState(null);
 
   if (carregando && !dados) return <Carregando />;
   if (erro) return <AlertaErro erro={erro.status === 404 ? "Evento não encontrado." : erro} />;
@@ -83,6 +94,22 @@ export default function DetalheEvento() {
     setRemovendo(null);
   });
 
+  // UC07-b: status Cancelado com motivo opcional; o evento continua visível no calendário
+  async function confirmarCancelamento() {
+    setErroCancelar(null);
+    setEnviando(true);
+    try {
+      await cancelarEvento(evento.id, motivo.trim());
+      setCancelando(false);
+      setMotivo("");
+      await recarregar();
+    } catch (falha) {
+      setErroCancelar(falha);
+    } finally {
+      setEnviando(false);
+    }
+  }
+
   function escolherColega(atleta) {
     if (atleta && !colegas.some((c) => c.id === atleta.id)) setColegas([...colegas, atleta]);
   }
@@ -109,7 +136,15 @@ export default function DetalheEvento() {
           {cancelado && evento.motivo_cancelamento && (
             <p className="text-danger mb-1">Motivo do cancelamento: {evento.motivo_cancelamento}</p>
           )}
-          <Button as={Link} to="/calendario" variant="outline-primary" className="mt-3">Voltar ao calendário</Button>
+          <div className="d-flex flex-wrap gap-2 mt-3">
+            <Button as={Link} to="/calendario" variant="outline-primary">Voltar ao calendário</Button>
+            {ehDiretor && !cancelado && (
+              <>
+                <Button as={Link} to={`/eventos/${evento.id}/editar`}>Editar</Button>
+                <Button variant="outline-danger" onClick={() => setCancelando(true)}>Cancelar evento</Button>
+              </>
+            )}
+          </div>
         </Card.Body>
       </Card>
 
@@ -184,6 +219,27 @@ export default function DetalheEvento() {
           </Card.Body>
         </Card>
       )}
+
+      <Modal show={cancelando} onHide={() => setCancelando(false)} centered>
+        <Modal.Header closeButton><Modal.Title className="h5">Cancelar evento</Modal.Title></Modal.Header>
+        <Modal.Body>
+          <p>
+            "{evento.titulo}" continuará no calendário marcado como cancelado, e os atletas ativos serão avisados.
+          </p>
+          <AlertaErro erro={erroCancelar && !erroCancelar.campos?.motivo ? erroCancelar : null} />
+          <Form.Group controlId="motivo">
+            <Form.Label>Motivo (opcional)</Form.Label>
+            <Form.Control as="textarea" rows={3} maxLength={200} value={motivo}
+              onChange={(e) => setMotivo(e.target.value)} isInvalid={Boolean(erroCancelar?.campos?.motivo)} />
+            <Form.Text muted>{motivo.length}/200</Form.Text>
+            <ErroCampo erro={erroCancelar} campo="motivo" />
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline-secondary" onClick={() => setCancelando(false)}>Voltar</Button>
+          <Button variant="danger" onClick={confirmarCancelamento} disabled={enviando}>Cancelar evento</Button>
+        </Modal.Footer>
+      </Modal>
 
       <Modal show={Boolean(removendo)} onHide={() => setRemovendo(null)} centered>
         <Modal.Header closeButton><Modal.Title className="h5">Remover presença</Modal.Title></Modal.Header>
