@@ -1,0 +1,20 @@
+/* Identidade visual do PingPoli (04_FRONTEND §6). Valores provisórios: ajustar com o Figma. */
+:root {
+  --pp-azul: #1d3f8f;
+  --pp-azul-escuro: #142c66;
+  --pp-amarelo: #f5c400;
+  --bs-primary: var(--pp-azul);
+  --bs-primary-rgb: 29, 63, 143;
+  --bs-link-color: var(--pp-azul);
+}
+.btn-primary {
+  --bs-btn-bg: var(--pp-azul);
+  --bs-btn-border-color: var(--pp-azul);
+  --bs-btn-hover-bg: var(--pp-azul-escuro);
+  --bs-btn-hover-border-color: var(--pp-azul-escuro);
+  --bs-btn-active-bg: var(--pp-azul-escuro);
+}
+.navbar-pingpoli { background: var(--pp-azul); }
+.navbar-pingpoli .navbar-brand span { color: var(--pp-amarelo); }
+.destaque-amarelo { border-left: 4px solid var(--pp-amarelo); }
+.pagina-login { min-height: 100vh; background: linear-gradient(135deg, var(--pp-azul) 0%, var(--pp-azul-escuro) 100%); }
