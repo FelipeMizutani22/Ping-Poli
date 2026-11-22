@@ -117,7 +117,7 @@ function SolicitacoesPendentes({ versao, abrirModal, concluir }) {
 }
 
 function Membros({ versao, abrirModal }) {
-  const { usuario } = useAuth();
+  const { usuario, recarregarUsuario } = useAuth();
   const [filtros, setFiltros] = useState({ busca: "", papel: "", situacao: "" });
   const [buscaDigitada, setBuscaDigitada] = useState("");
   const [pagina, setPagina] = useState(1);
@@ -134,10 +134,13 @@ function Membros({ versao, abrirModal }) {
   }
 
   function confirmar(atleta, tipo) {
+    const ehVoce = atleta.id === usuario.id;
     const opcoes = {
       inativar: {
         titulo: "Inativar conta",
-        texto: `${atleta.nome} não conseguirá mais entrar no sistema até ser reativado(a).`,
+        texto: ehVoce
+          ? "Você está inativando a sua própria conta: será desconectado(a) e não conseguirá entrar de novo."
+          : `${atleta.nome} não conseguirá mais entrar no sistema até ser reativado(a).`,
         campo: { rotulo: "Justificativa (opcional)", obrigatorio: false, max: 300 },
         textoBotao: "Inativar", variante: "danger",
         acao: async (just) => { await inativarAtleta(atleta.id, just); return `Conta de ${atleta.nome} inativada.`; },
@@ -152,13 +155,22 @@ function Membros({ versao, abrirModal }) {
         acao: async () => { await mudarPapel(atleta.id, "diretor"); return `${atleta.nome} agora é Diretor(a).`; },
       },
       revogar: {
-        titulo: "Revogar perfil de Diretor", texto: `${atleta.nome} voltará a ser Atleta.`,
+        titulo: "Revogar perfil de Diretor",
+        texto: ehVoce
+          ? "Você está revogando o seu próprio perfil de Diretor e perderá o acesso às funções administrativas."
+          : `${atleta.nome} voltará a ser Atleta.`,
         textoBotao: "Revogar", variante: "warning",
-        acao: async () => { await mudarPapel(atleta.id, "atleta"); return `${atleta.nome} voltou a ser Atleta.`; },
+        acao: async () => {
+          await mudarPapel(atleta.id, "atleta");
+          // Se revogou o próprio perfil, atualiza os dados do login: o menu e as rotas de Diretor somem na hora.
+          if (ehVoce) await recarregarUsuario();
+          return `${atleta.nome} voltou a ser Atleta.`;
+        },
       },
     };
     abrirModal(opcoes[tipo]);
   }
+
 
   return (
     <>
