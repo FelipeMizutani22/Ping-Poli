@@ -43,7 +43,7 @@ class CadastroTests(APITestCase):
     def test_validacoes_por_campo(self):
         casos = {
             "nome": "J0ão",
-            "email": "joao@gmail.com",
+            "email": "joao-sem-arroba",
             "ano_ingresso": 1990,
             "telefone": "11988887777",
             "senha": "curta",
@@ -56,6 +56,11 @@ class CadastroTests(APITestCase):
                 self.assertEqual(r.status_code, 400)
                 self.assertIn(campo, r.data)
         self.assertEqual(Atleta.objects.count(), 1)  # nada foi gravado
+
+    def test_aceita_email_fora_da_usp(self):
+        r = self.enviar(email="joao.silva@gmail.com")
+        self.assertEqual(r.status_code, 201)
+        self.assertTrue(Atleta.objects.filter(email="joao.silva@gmail.com", situacao="pendente").exists())
 
     def test_confirmacao_de_senha_diferente(self):
         r = self.enviar(senha_confirmacao="outrasenha")

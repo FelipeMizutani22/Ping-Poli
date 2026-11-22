@@ -51,7 +51,7 @@ export default function Login() {
           </h1>
           <p className="text-center text-muted mb-4">Tênis de Mesa · Poli-USP</p>
 
-          {erro && <Alert variant={erro.status === 403 ? "warning" : "danger"}>{erro.message}</Alert>}
+          {location.state?.mensagem && !erro && <Alert variant="success">{location.state.mensagem}</Alert>}
 
           <Form noValidate onSubmit={enviar}>
             <Form.Group className="mb-3" controlId="email">
