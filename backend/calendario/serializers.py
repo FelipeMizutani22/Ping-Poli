@@ -77,3 +77,11 @@ class RegistrarPresencaSerializer(serializers.Serializer):
     """{ "atletas": [5, 8] } · lista vazia ou ausente = o próprio usuário."""
 
     atletas = serializers.ListField(child=serializers.IntegerField(min_value=1), required=False, default=list)
+
+
+class AjustePresencaSerializer(serializers.Serializer):
+    """UC10: { "presentes": [ids], "justificativa": "…" }. A justificativa é obrigatória se houver remoção."""
+
+    presentes = serializers.ListField(child=serializers.IntegerField(min_value=1), allow_empty=True)
+    justificativa = serializers.CharField(min_length=5, max_length=200, required=False, allow_blank=True,
+                                          default="", trim_whitespace=True)

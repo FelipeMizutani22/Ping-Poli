@@ -144,6 +144,12 @@ export default function DetalheEvento() {
                 <Button variant="outline-danger" onClick={() => setCancelando(true)}>Cancelar evento</Button>
               </>
             )}
+            {ehDiretor && ehTreino && (
+              <Button as={Link} variant="outline-secondary"
+                to={`/frequencia/ajustar?mes=${evento.data_evento.slice(0, 7)}&evento=${evento.id}`}>
+                Ajustar presenças
+              </Button>
+            )}
           </div>
         </Card.Body>
       </Card>

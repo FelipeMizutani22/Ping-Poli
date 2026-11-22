@@ -1,20 +1,23 @@
 """Views do app calendario: calendário unificado (UC08) e gestão de eventos pelo Diretor (UC07)."""
 import calendar
 
-from django.db.models import Count, Exists, OuterRef
+from django.contrib.auth import get_user_model
+from django.db.models import Count, Exists, OuterRef, Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.dateparse import parse_date
-from rest_framework import generics, status
+from rest_framework import generics, serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from competicoes.models import Campeonato
 from contas.permissoes import AtletaAtivo, Diretor
+from contas.serializers import AtletaResumoSerializer
 from .models import Evento, Presenca
 from .regras import dentro_da_janela, janela
 from .serializers import (
     FORMATO_HORA,
+    AjustePresencaSerializer,
     CancelarEventoSerializer,
     EventoEntradaSerializer,
     EventoSerializer,
@@ -22,9 +25,12 @@ from .serializers import (
     RegistrarPresencaSerializer,
 )
 from .servicos import (
+    MSG_NAO_AJUSTAVEL,
     ErroPresenca,
     EventoJaCancelado,
     cancelar_evento,
+    ajustar_presencas,
+    ajustavel,
     criar_evento,
     editar_evento,
     registrar_presencas,
@@ -78,6 +84,7 @@ class CalendarioView(APIView):
                     "hora_inicio": e.hora_inicio.strftime(FORMATO_HORA),
                     "hora_fim": e.hora_fim.strftime(FORMATO_HORA),
                     "local": e.local_evento, "status": e.status, "presente": e.presente,
+                    "total_presentes": e.total_presentes,
                 }
                 for e in eventos
             ]
@@ -193,3 +200,50 @@ class PresencaDeleteView(APIView):
         except ErroPresenca as e:
             return Response({"detail": str(e), "codigo": e.codigo}, status=e.status_http)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+def _linha_ajuste(atleta, presenca):
+    """Uma linha da tela de ajuste: o atleta e, se presente, quem registrou e quando."""
+    return {
+        "atleta": AtletaResumoSerializer(atleta).data,
+        "presente": presenca is not None,
+        "registrado_por": AtletaResumoSerializer(presenca.registrado_por).data if presenca else None,
+        "data_registro": serializers.DateTimeField().to_representation(presenca.data_registro) if presenca else None,
+    }
+
+
+class AjustePresencaView(APIView):
+    """
+    UC10 · Ajustar presenças (🛡), sem a janela de horário e com auditoria de cada mudança.
+    GET eventos/{id}/ajuste/ → { evento, ajustavel, mensagem, atletas: [{ atleta, presente, registrado_por, data_registro }] }
+    PUT eventos/{id}/ajuste/ { presentes, justificativa } → 200 { incluidos, removidos }
+        409 "treino_nao_ajustavel" · 400 "justificativa_obrigatoria" / "atleta_invalido"
+    """
+
+    permission_classes = [Diretor]
+
+    def get(self, request, pk):
+        evento = get_object_or_404(eventos_com_presenca(request.user), pk=pk)
+        presencas = {p.atleta_id: p for p in evento.presencas.select_related("registrado_por")}
+        # UC10 passo 4: todos os atletas ativos, mais quem está presente mas deixou de ser ativo
+        Atleta = get_user_model()
+        atletas = Atleta.objects.filter(Q(situacao="ativa") | Q(pk__in=presencas)).order_by("nome")
+        pode = ajustavel(evento)
+        return Response({
+            "evento": EventoSerializer(evento).data,
+            "ajustavel": pode,
+            "mensagem": "" if pode else MSG_NAO_AJUSTAVEL,
+            "atletas": [_linha_ajuste(a, presencas.get(a.id)) for a in atletas],
+        })
+
+    def put(self, request, pk):
+        get_object_or_404(Evento, pk=pk)
+        entrada = AjustePresencaSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        try:
+            incluidos, removidos = ajustar_presencas(
+                pk, request.user, entrada.validated_data["presentes"], entrada.validated_data["justificativa"]
+            )
+        except ErroPresenca as e:
+            return Response({"detail": str(e), "codigo": e.codigo}, status=e.status_http)
+        return Response({"incluidos": incluidos, "removidos": removidos})

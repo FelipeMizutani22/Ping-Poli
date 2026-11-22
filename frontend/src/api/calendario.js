@@ -10,3 +10,6 @@ export const listarPresencas = (id) => apiFetch(`eventos/${id}/presencas/`); // 
 export const registrarPresencas = (id, atletas = []) =>
   apiFetch(`eventos/${id}/presencas/`, { method: "POST", body: { atletas } }); // [] = eu mesmo
 export const removerPresenca = (id, atletaId) => apiFetch(`eventos/${id}/presencas/${atletaId}/`, { method: "DELETE" });
+export const buscarAjuste = (id) => apiFetch(`eventos/${id}/ajuste/`); // UC10 (Diretor)
+export const salvarAjuste = (id, presentes, justificativa) =>
+  apiFetch(`eventos/${id}/ajuste/`, { method: "PUT", body: { presentes, justificativa } });
