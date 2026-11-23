@@ -2,6 +2,7 @@ import { Container, Nav, NavDropdown, Navbar as BsNavbar } from "react-bootstrap
 import { Link, NavLink } from "react-router-dom";
 
 import { useAuth } from "../contexts/AuthContext";
+import SinoNotificacoes from "./SinoNotificacoes";
 
 export default function Navbar() {
   const { usuario, ehDiretor, sair } = useAuth();
@@ -32,7 +33,8 @@ export default function Navbar() {
               </NavDropdown>
             )}
           </Nav>
-          <Nav>
+          <Nav className="align-items-lg-center">
+            <SinoNotificacoes />
             <NavDropdown title={usuario?.nome || "Conta"} id="menu-usuario" align="end">
               <NavDropdown.Item as={Link} to="/perfil">Meu perfil</NavDropdown.Item>
               <NavDropdown.Divider />
