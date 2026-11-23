@@ -29,3 +29,9 @@ class FiltrosEquipeSerializer(serializers.Serializer):
 
 class FiltrosDashboardSerializer(FiltrosEquipeSerializer):
     tipo_adversario = serializers.ChoiceField(choices=['todos', 'poli', 'externo'], default='todos')
+
+
+class FiltrosConfrontoSerializer(FiltrosEquipeSerializer):
+    periodo = serializers.ChoiceField(choices=['3m', '6m', '12m', 'tudo', 'custom'], default='tudo')
+    b = serializers.IntegerField(min_value=1, max_value=9223372036854775807,
+        error_messages={'required': 'Selecione um atleta para comparar'})

@@ -1,3 +1,4 @@
+from datetime import date
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -7,7 +8,7 @@ from rest_framework.response import Response
 from contas.permissoes import AtletaAtivo, Diretor
 from contas.serializers import AtletaResumoSerializer
 from . import calculos, consultas
-from .serializers import FiltrosDashboardSerializer, FiltrosEquipeSerializer
+from .serializers import FiltrosDashboardSerializer, FiltrosEquipeSerializer, FiltrosConfrontoSerializer
 
 
 class DashboardView(generics.GenericAPIView):
@@ -70,3 +71,40 @@ class EquipeView(generics.GenericAPIView):
             'ranking': calculos.ranking_equipe(grupos),
             'partidas_por_mes': calculos.partidas_por_mes(linhas, inicio, fim),
         })
+
+
+class ConfrontoView(generics.GenericAPIView):
+    permission_classes = [AtletaAtivo]
+    serializer_class = FiltrosConfrontoSerializer
+
+    def get(self, request):
+        filtros = self.get_serializer(data=request.query_params)
+        filtros.is_valid(raise_exception=True)
+        dados = filtros.validated_data
+        a = request.user
+        if a.papel == 'diretor' and 'a' in request.query_params:
+            try:
+                pk = serializers.IntegerField(min_value=1, max_value=9223372036854775807).run_validation(request.query_params['a'])
+            except serializers.ValidationError as erro:
+                raise serializers.ValidationError({'a': erro.detail})
+            a = get_object_or_404(get_user_model(), pk=pk)
+        b = get_object_or_404(get_user_model(), pk=dados['b'])
+        if a.pk == b.pk:
+            raise serializers.ValidationError({'b': ['Escolha um atleta diferente']})
+        hoje = timezone.localdate()
+        if dados['periodo'] == 'tudo':
+            # Inclui pendências anteriores ao primeiro confronto confirmado.
+            inicio, fim = date.min, hoje
+        else:
+            inicio, fim = calculos.resolver_periodo(dados['periodo'], hoje=hoje,
+                inicio=dados.get('inicio'), fim=dados.get('fim'))
+        linhas, sets, pendentes = consultas.confronto_entre(a, b, inicio, fim, dados['competicao'])
+        resposta = calculos.confronto_direto(linhas, AtletaResumoSerializer(a).data,
+            AtletaResumoSerializer(b).data, pendentes_entre_eles=pendentes)
+        # UC19 compara também o desempenho geral, inclusive contra outros adversários.
+        for lado, atleta in [('a', a), ('b', b)]:
+            resposta[f'indicadores_{lado}'] = calculos.indicadores(
+                consultas.linhas_do_atleta(atleta, inicio, fim, dados['competicao']))
+        for partida in resposta['partidas']:
+            partida['sets'] = sets[partida['partida_id']]
+        return Response(resposta)

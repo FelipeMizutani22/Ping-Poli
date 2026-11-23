@@ -82,7 +82,7 @@ function MeuDesempenho() {
   ] : [];
 
   return <div>
-    <h1 className="h3 mb-3">Meu desempenho</h1>
+    <h1 className="h3 mb-3">Meu desempenho</h1><Link to="/confronto" className="ms-3">Confronto direto</Link>
     <Card className="mb-4"><Card.Body>
       <Form onSubmit={aplicar}>
         <fieldset disabled={carregando}>

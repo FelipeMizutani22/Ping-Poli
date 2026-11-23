@@ -161,3 +161,28 @@ def linhas_da_equipe(inicio, fim, competicao='todas'):
                 'atleta': {'id': atleta.pk, 'nome': atleta.nome, 'nusp': atleta.nusp}, 'linhas': []})
             grupo['linhas'].append(_linha_da_partida(partida, atleta.pk))
     return list(grupos.values())
+
+
+def confronto_entre(a, b, inicio, fim, competicao='todas'):
+    """Jogos do par em ambas as orientações; sets sempre na perspectiva de A."""
+    pares = Partida.objects.filter(
+        Q(atleta=a, adversario=b) | Q(atleta=b, adversario=a),
+        tipo_adversario='poli', data_jogo__range=(inicio, fim))
+    if competicao == 'amistoso':
+        pares = pares.filter(campeonato__isnull=True)
+    elif competicao != 'todas':
+        pares = pares.filter(campeonato_id=int(competicao))
+    pendentes = pares.filter(status='pendente').count()
+    partidas = pares.filter(status='confirmada').select_related(
+        'atleta', 'adversario', 'campeonato').prefetch_related(Prefetch(
+            'sets', queryset=SetPartida.objects.filter(contestacao__isnull=True).order_by('numero'),
+            to_attr='sets_para_desempenho')).order_by('data_jogo', 'pk')
+    linhas, sets = [], {}
+    for partida in partidas:
+        linhas.append(_linha_da_partida(partida, a.pk))
+        direto = partida.atleta_id == a.pk
+        sets[partida.pk] = [{'numero': s.numero,
+            'pontos_atleta': s.pontos_atleta if direto else s.pontos_adversario,
+            'pontos_adversario': s.pontos_adversario if direto else s.pontos_atleta}
+            for s in partida.sets_para_desempenho]
+    return linhas, sets, pendentes
