@@ -26,7 +26,7 @@ export default function ListaCampeonatos() {
   }, [status, tentativa]);
   return <div>
     <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
-      <h1 className="h3 mb-0">Campeonatos</h1>
+      <Link to="/inscricoes">Minhas inscrições</Link><h1 className="h3 mb-0">Campeonatos</h1>
       {ehDiretor && <Button as={Link} to="/campeonatos/novo">Novo campeonato</Button>}
     </div>
     <Form.Group controlId="campeonatos-status" className="mb-4" style={{ maxWidth: 360 }}>

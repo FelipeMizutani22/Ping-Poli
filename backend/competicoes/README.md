@@ -59,3 +59,15 @@ DELETE/PUT não são expostos, seguindo as rotas do contrato. A rotina agendada 
 não faz parte desta tarefa. Não há alteração de modelos ou migrações.
 
 Teste: `python manage.py test competicoes` dentro de `backend`.
+
+
+## D6 — inscrições próprias
+
+- `POST /api/v1/inscricoes/`: categorias (IDs únicos do mesmo campeonato), observacoes (até 300 caracteres), ciencia_regulamento=true. Retorna 201 com a lista de inscrições.
+- `GET /api/v1/inscricoes/minhas/`: histórico exclusivamente do usuário autenticado, incluindo canceladas.
+- `DELETE /api/v1/inscricoes/{id}/`: cancelamento lógico da própria inscrição, durante a janela de inscrições; 204. Diretores seguem as mesmas regras para inscrições próprias.
+- Erros 409: inscricoes_fechadas, ja_inscrito, sem_vagas (categorias_esgotadas contém IDs numéricos). Entradas inválidas: 400; inscrição alheia: 404.
+- Uma transação valida todas as categorias antes de reservar vagas. Bloqueio do campeonato seguido das categorias em ordem de ID. SQLite adquire bloqueio de escrita antes das leituras, pois ignora select_for_update; outros bancos usam os bloqueios de linha.
+- Reinscrição reativa a mesma linha. Cancelamento libera a vaga e mantém o histórico. E-mails são disparados após o commit; no ambiente local usam o backend configurado de console.
+- Interface: inscrição no detalhe do campeonato e `/inscricoes` para histórico/cancelamento. Trocas utilizam cancelamento e nova inscrição separados, sujeitos à disponibilidade; não há endpoint de troca atômica no contrato D6.
+- Nenhuma migração ou recriação de dados é necessária.
