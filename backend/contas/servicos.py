@@ -5,7 +5,7 @@ from django.utils import timezone
 from rest_framework.authtoken.models import Token
 
 from nucleo.servicos import auditar, enviar_email, notificar, notificar_diretores
-from .models import Atleta
+from .models import Atleta, Curso
 
 MSG_CONTA_EXISTENTE = (
     "Já existe uma conta com este e-mail/NUSP. Use 'Esqueci minha senha' ou procure a Diretoria"
@@ -168,4 +168,35 @@ def mudar_papel(atleta_id, diretor, novo_papel):
     atleta.papel = novo_papel
     atleta.save(update_fields=["papel"])
     auditar("atleta", atleta.pk, "mudar_papel", diretor, anterior={"papel": anterior}, novo={"papel": novo_papel})
+    return atleta
+
+
+# --- Editar dados de um membro (UC03-b) --------------------------------------
+
+
+def _para_auditoria(valor):
+    return valor.nome if isinstance(valor, Curso) else valor
+
+
+@transaction.atomic
+def editar_atleta(atleta_id, diretor, dados):
+    """Grava só o que mudou e audita os valores anterior e novo. Avisa por e-mail se o e-mail mudou."""
+    atleta = Atleta.objects.select_for_update().get(pk=atleta_id)
+    anterior, novo = {}, {}
+    for campo, valor in dados.items():
+        atual = getattr(atleta, campo)
+        if atual != valor:
+            anterior[campo] = _para_auditoria(atual)
+            novo[campo] = _para_auditoria(valor)
+            setattr(atleta, campo, valor)
+    if not novo:
+        return atleta
+
+    atleta.save()
+    auditar("atleta", atleta.pk, "editar", diretor, anterior=anterior, novo=novo)
+    if "email" in novo:
+        enviar_email(
+            atleta.email, "PingPoli: e-mail de acesso alterado",
+            f"Olá, {atleta.nome}. A Diretoria alterou o seu e-mail de acesso ao PingPoli para {atleta.email}.",
+        )
     return atleta

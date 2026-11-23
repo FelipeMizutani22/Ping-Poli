@@ -21,3 +21,6 @@ export const solicitarCadastro = (dados) => apiFetch("cadastro/", { method: "POS
 export const buscarPerfil = () => apiFetch("perfil/");
 export const atualizarPerfil = (dados) => apiFetch("perfil/", { method: "PATCH", body: dados });
 export const trocarSenha = (dados) => apiFetch("perfil/senha/", { method: "POST", body: dados });
+
+// Editar dados de um membro pelo Diretor (UC03-b)
+export const editarAtleta = (id, dados) => apiFetch(`atletas/${id}/`, { method: "PATCH", body: dados });

@@ -13,6 +13,7 @@ import { useApi } from "../../hooks/useApi";
 import { formatarData, formatarDataHora } from "../../utils/formatacao";
 import { ROTULOS, rotulo } from "../../utils/rotulos";
 import ModalConfirmacao from "./ModalConfirmacao";
+import ModalEditarAtleta from "./ModalEditarAtleta";
 
 const POR_PAGINA = 20;
 
@@ -42,7 +43,7 @@ export default function GestaoAtletas() {
 
         {aba === "pendentes"
           ? <SolicitacoesPendentes versao={versao} abrirModal={setModal} concluir={concluir} />
-          : <Membros versao={versao} abrirModal={setModal} />}
+          : <Membros versao={versao} abrirModal={setModal} concluir={concluir} />}
       </Card.Body>
 
       {modal && (
@@ -116,8 +117,9 @@ function SolicitacoesPendentes({ versao, abrirModal, concluir }) {
   );
 }
 
-function Membros({ versao, abrirModal }) {
+function Membros({ versao, abrirModal, concluir }) {
   const { usuario, recarregarUsuario } = useAuth();
+  const [editando, setEditando] = useState(null); // atleta aberto na janela de edição
   const [filtros, setFiltros] = useState({ busca: "", papel: "", situacao: "" });
   const [buscaDigitada, setBuscaDigitada] = useState("");
   const [pagina, setPagina] = useState(1);
@@ -221,6 +223,10 @@ function Membros({ versao, abrirModal }) {
                   <td><BadgeStatus status={a.situacao} grupo="situacao" /></td>
                   <td>{a.ultimo_acesso ? formatarDataHora(a.ultimo_acesso) : "—"}</td>
                   <td className="text-end text-nowrap">
+                    {["ativa", "inativa"].includes(a.situacao) && (
+                      <Button size="sm" variant="outline-secondary" className="me-2"
+                        onClick={() => setEditando(a)}>Editar</Button>
+                    )}
                     {a.situacao === "ativa" && (
                       <>
                         {a.papel === "atleta"
@@ -239,6 +245,17 @@ function Membros({ versao, abrirModal }) {
               ))}
             </tbody>
           </Table>
+          {editando && (
+            <ModalEditarAtleta
+              atleta={editando}
+              onFechar={() => setEditando(null)}
+              onSalvo={async (atualizado) => {
+                if (atualizado.id === usuario.id) await recarregarUsuario(); // nome na barra de navegação
+                setEditando(null);
+                concluir(`Dados de ${atualizado.nome} atualizados.`);
+              }}
+            />
+          )}
           {totalPaginas > 1 && (
             <Pagination className="justify-content-center">
               {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((n) => (
