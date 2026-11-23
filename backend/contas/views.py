@@ -15,6 +15,7 @@ from .models import Atleta, Curso
 from .permissoes import Diretor
 from .serializers import (
     AtletaAdminSerializer,
+    AtletaEdicaoSerializer,
     AtletaMeSerializer,
     AtletaResumoSerializer,
     CursoSerializer,
@@ -30,6 +31,7 @@ from .servicos import (
     SituacaoInvalida,
     UltimoDiretor,
     aprovar_cadastro,
+    editar_atleta,
     mudar_papel,
     mudar_situacao,
     recusar_cadastro,
@@ -197,11 +199,18 @@ class AtletaListView(generics.ListAPIView):
 
 
 class AtletaDetailView(generics.RetrieveAPIView):
-    """GET atletas/{id}/ → dados completos (Diretor)."""
+    """GET atletas/{id}/ → dados completos · PATCH atletas/{id}/ → editar dados do membro (Diretor, UC03-b)."""
 
     permission_classes = [Diretor]
     serializer_class = AtletaAdminSerializer
     queryset = Atleta.objects.select_related("curso")
+
+    def patch(self, request, pk):
+        atleta = self.get_object()
+        dados = AtletaEdicaoSerializer(atleta, data=request.data, partial=True)
+        dados.is_valid(raise_exception=True)
+        atleta = editar_atleta(atleta.pk, request.user, dados.validated_data)
+        return Response(AtletaAdminSerializer(atleta).data)
 
 
 class AprovarView(APIView):

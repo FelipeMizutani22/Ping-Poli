@@ -156,3 +156,37 @@ class TrocaSenhaSerializer(serializers.Serializer):
         if dados["nova_senha"] != dados["confirmacao"]:
             raise serializers.ValidationError({"confirmacao": "As senhas não conferem."})
         return dados
+
+
+
+class AtletaEdicaoSerializer(serializers.ModelSerializer):
+    """Edição dos dados de um membro pelo Diretor (UC03-b). O NUSP não muda: ele identifica a pessoa."""
+
+    nome = serializers.RegexField(
+        r"^[A-Za-zÀ-ÖØ-öø-ÿ ]{3,100}$",
+        error_messages={"invalid": "Use apenas letras e espaços (3 a 100 caracteres)."},
+    )
+    email = serializers.EmailField(max_length=100, error_messages={"invalid": "Formato de e-mail inválido."})
+    telefone = serializers.RegexField(
+        r"^\(\d{2}\) \d{5}-\d{4}$", required=False, allow_blank=True,
+        error_messages={"invalid": "Use o formato (99) 99999-9999."},
+    )
+
+    class Meta:
+        model = Atleta
+        fields = ["nome", "email", "curso", "ano_ingresso", "telefone"]
+
+    validate_nome = SolicitacaoCadastroSerializer.validate_nome
+
+    def validate_email(self, valor):
+        valor = valor.strip().lower()
+        if Atleta.objects.filter(email=valor).exclude(pk=self.instance.pk).exists():
+            raise serializers.ValidationError("Já existe outra conta com este e-mail.")
+        return valor
+
+    def validate_ano_ingresso(self, valor):
+        # Mais flexível que o cadastro: membros antigos (já formados) podem ter entrado há mais de 10 anos.
+        atual = timezone.localdate().year
+        if not 1950 <= valor <= atual:
+            raise serializers.ValidationError(f"Informe um ano entre 1950 e {atual}.")
+        return valor

@@ -14,13 +14,7 @@ const VAZIO = {
   senha: "", senha_confirmacao: "", aceite_termos: false,
 };
 
-// Formata o telefone enquanto a pessoa digita: (11) 98888-7777
-function mascaraTelefone(valor) {
-  const d = valor.replace(/\D/g, "").slice(0, 11);
-  if (d.length <= 2) return d.length ? `(${d}` : "";
-  if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
-  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
-}
+import { mascaraTelefone } from "../../utils/formatacao";
 
 // UC02 · Solicitar Cadastro (Visitante). A conta nasce Pendente e aguarda a aprovação da Diretoria.
 export default function Cadastro() {
