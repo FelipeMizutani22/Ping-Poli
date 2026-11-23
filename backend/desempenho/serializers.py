@@ -2,12 +2,11 @@ from django.utils import timezone
 from rest_framework import serializers
 
 
-class FiltrosDashboardSerializer(serializers.Serializer):
+class FiltrosEquipeSerializer(serializers.Serializer):
     periodo = serializers.ChoiceField(choices=['3m', '6m', '12m', 'tudo', 'custom'], default='12m')
     inicio = serializers.DateField(required=False)
     fim = serializers.DateField(required=False)
     competicao = serializers.CharField(default='todas')
-    tipo_adversario = serializers.ChoiceField(choices=['todos', 'poli', 'externo'], default='todos')
 
     def validate_competicao(self, valor):
         if valor in ('todas', 'amistoso'):
@@ -26,3 +25,7 @@ class FiltrosDashboardSerializer(serializers.Serializer):
             if dados['fim'] > timezone.localdate():
                 raise serializers.ValidationError({'fim': ['A data final não pode estar no futuro.']})
         return dados
+
+
+class FiltrosDashboardSerializer(FiltrosEquipeSerializer):
+    tipo_adversario = serializers.ChoiceField(choices=['todos', 'poli', 'externo'], default='todos')

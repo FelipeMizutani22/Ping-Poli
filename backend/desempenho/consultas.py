@@ -57,47 +57,49 @@ def linhas_do_atleta(
         .order_by("data_jogo", "id")
     )
 
-    linhas = []
-    for partida in partidas:
-        placar = resultado([
-            {
-                "pontos_atleta": s.pontos_atleta,
-                "pontos_adversario": s.pontos_adversario,
-            }
-            for s in partida.sets_para_desempenho
-        ])
+    return [_linha_da_partida(partida, atleta.pk) for partida in partidas]
 
-        registrante = partida.atleta_id == atleta.pk
-        lado_pro = "atleta" if registrante else "adversario"
-        lado_contra = "adversario" if registrante else "atleta"
 
-        if not registrante:
-            adversario = partida.atleta
-        elif partida.tipo_adversario == "poli":
-            adversario = partida.adversario
-        else:
-            adversario = partida.adversario_externo
+def _linha_da_partida(partida, atleta_id):
+    placar = resultado([
+        {
+            "pontos_atleta": s.pontos_atleta,
+            "pontos_adversario": s.pontos_adversario,
+        }
+        for s in partida.sets_para_desempenho
+    ])
 
-        linhas.append({
-            "partida_id": partida.pk,
-            "data": partida.data_jogo,
-            "campeonato_id": partida.campeonato_id,
-            "competicao": (
-                partida.campeonato.nome
-                if partida.campeonato_id
-                else "Amistoso/Treino"
-            ),
-            "tipo_adversario": partida.tipo_adversario,
-            "adversario_id": adversario.pk,
-            "adversario_nome": adversario.nome,
-            "sets_pro": placar[f"sets_{lado_pro}"],
-            "sets_contra": placar[f"sets_{lado_contra}"],
-            "pontos_pro": placar[f"pontos_{lado_pro}"],
-            "pontos_contra": placar[f"pontos_{lado_contra}"],
-            "venceu": placar["vencedor"] == lado_pro,
-        })
+    registrante = partida.atleta_id == atleta_id
+    lado_pro = "atleta" if registrante else "adversario"
+    lado_contra = "adversario" if registrante else "atleta"
 
-    return linhas
+    if not registrante:
+        adversario = partida.atleta
+    elif partida.tipo_adversario == "poli":
+        adversario = partida.adversario
+    else:
+        adversario = partida.adversario_externo
+
+    return {
+        "partida_id": partida.pk,
+        "data": partida.data_jogo,
+        "campeonato_id": partida.campeonato_id,
+        "competicao": (
+            partida.campeonato.nome
+            if partida.campeonato_id
+            else "Amistoso/Treino"
+        ),
+        "tipo_adversario": partida.tipo_adversario,
+        "adversario_id": adversario.pk,
+        "adversario_nome": adversario.nome,
+        "sets_pro": placar[f"sets_{lado_pro}"],
+        "sets_contra": placar[f"sets_{lado_contra}"],
+        "pontos_pro": placar[f"pontos_{lado_pro}"],
+        "pontos_contra": placar[f"pontos_{lado_contra}"],
+        "venceu": placar["vencedor"] == lado_pro,
+    }
+
+
 
 def primeira_data_do_atleta(atleta, hoje):
     """Primeiro jogo confirmado, em qualquer perspectiva, até hoje."""
@@ -132,3 +134,30 @@ def colocacoes_do_atleta(atleta, inicio, fim, competicao='todas'):
             '-categoria__campeonato__data_fim', 'categoria__nome', 'id'
         )
     ]
+
+
+def primeira_data_da_equipe(hoje):
+    return Partida.objects.filter(status='confirmada', data_jogo__lte=hoje).order_by(
+        'data_jogo').values_list('data_jogo', flat=True).first()
+
+
+def linhas_da_equipe(inicio, fim, competicao='todas'):
+    """Duas consultas para toda a equipe, incluindo o histórico de inativos."""
+    partidas = Partida.objects.filter(status='confirmada', data_jogo__range=(inicio, fim))
+    if competicao == 'amistoso':
+        partidas = partidas.filter(campeonato__isnull=True)
+    elif competicao != 'todas':
+        partidas = partidas.filter(campeonato_id=int(competicao))
+    partidas = partidas.select_related('atleta', 'adversario', 'adversario_externo', 'campeonato').prefetch_related(
+        Prefetch('sets', queryset=SetPartida.objects.filter(contestacao__isnull=True).order_by('numero'),
+                 to_attr='sets_para_desempenho'))
+    grupos = {}
+    for partida in partidas:
+        atletas = [partida.atleta]
+        if partida.tipo_adversario == 'poli':
+            atletas.append(partida.adversario)
+        for atleta in atletas:
+            grupo = grupos.setdefault(atleta.pk, {
+                'atleta': {'id': atleta.pk, 'nome': atleta.nome, 'nusp': atleta.nusp}, 'linhas': []})
+            grupo['linhas'].append(_linha_da_partida(partida, atleta.pk))
+    return list(grupos.values())

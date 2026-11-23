@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Badge, Button, Card, Col, Form, Row, Table } from 'react-bootstrap';
+import { Alert, Badge, Button, Card, Col, Form, Row, Table, Tab, Tabs } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { buscarDesempenho } from '../../api/desempenho';
 import { listarCampeonatos } from '../../api/competicoes';
+import Equipe from './Equipe';
 import BuscaAtleta from '../../components/BuscaAtleta';
 import Carregando from '../../components/Carregando';
 import { useAuth } from '../../contexts/AuthContext';
@@ -12,7 +13,7 @@ import { formatarData, formatarMes, hojeISO } from '../../utils/formatacao';
 const PADRAO = { periodo: '12m', competicao: 'todas', tipo_adversario: 'todos', inicio: '', fim: '' };
 const percentual = (valor) => `${Number(valor).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`;
 
-export default function Dashboard() {
+function MeuDesempenho() {
   const { ehDiretor } = useAuth();
   const [form, setForm] = useState(PADRAO);
   const [atleta, setAtleta] = useState(null);
@@ -137,4 +138,14 @@ export default function Dashboard() {
       </Card.Body></Card>
     </>}
   </div>;
+}
+
+
+export default function Dashboard() {
+  const { ehDiretor } = useAuth();
+  if (!ehDiretor) return <MeuDesempenho />;
+  return <Tabs defaultActiveKey="individual" className="mb-4" mountOnEnter unmountOnExit>
+    <Tab eventKey="individual" title="Meu desempenho"><MeuDesempenho /></Tab>
+    <Tab eventKey="equipe" title="Equipe"><Equipe /></Tab>
+  </Tabs>;
 }
