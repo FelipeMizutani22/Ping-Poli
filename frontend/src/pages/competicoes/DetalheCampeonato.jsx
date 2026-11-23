@@ -1,3 +1,4 @@
+import FormInscricao from './FormInscricao';
 import { useEffect, useState } from 'react';
 import { Alert, Badge, Button, Card, Col, Form, Modal, Row, Table } from 'react-bootstrap';
 import { Link, useLocation, useParams } from 'react-router-dom';
@@ -73,6 +74,7 @@ export default function DetalheCampeonato() {
         {c.categorias.map((cat) => <tr key={cat.id}><th scope="row">{cat.nome}</th><td>{cat.vagas ?? 'Sem limite'}</td><td>{cat.vagas_restantes === null ? 'Sem limite' : cat.vagas_restantes === 0 ? <Badge bg="secondary">Esgotadas</Badge> : cat.vagas_restantes}</td><td>{cat.inscrito ? <Badge bg="success">Inscrito</Badge> : 'Não inscrito'}</td></tr>)}
       </tbody></Table> : <p>Nenhuma categoria cadastrada.</p>}
     </Card.Body></Card>
+    <FormInscricao key={id} campeonato={c} atualizar={async () => setCampeonato(await buscarCampeonato(id))} />
     <Modal show={Boolean(acao)} onHide={() => { if (!enviando) setAcao(null); }} backdrop={enviando ? 'static' : true} keyboard={!enviando}>
       <Form onSubmit={confirmar}><Modal.Header closeButton={!enviando}><Modal.Title>{titulos[acao]}</Modal.Title></Modal.Header>
         <Modal.Body>{erroAcao && <Alert variant="danger" role="alert">{erroAcao}</Alert>}

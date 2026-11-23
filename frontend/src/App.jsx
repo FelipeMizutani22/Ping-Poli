@@ -1,3 +1,4 @@
+import MinhasInscricoes from './pages/competicoes/MinhasInscricoes';
 import { Route, Routes } from "react-router-dom";
 
 import Layout from "./components/Layout";
@@ -45,6 +46,7 @@ export default function App() {
           <Route path="/calendario" element={<Calendario />} />
           <Route path="/eventos/:id" element={<DetalheEvento />} />
           <Route path="/frequencia" element={<Frequencia />} />
+          <Route path="/inscricoes" element={<MinhasInscricoes />} />
           <Route path="/campeonatos" element={<ListaCampeonatos />} />
           <Route path="/campeonatos/:id" element={<DetalheCampeonato />} />
 
