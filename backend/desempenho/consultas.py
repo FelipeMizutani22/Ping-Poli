@@ -98,3 +98,37 @@ def linhas_do_atleta(
         })
 
     return linhas
+
+def primeira_data_do_atleta(atleta, hoje):
+    """Primeiro jogo confirmado, em qualquer perspectiva, até hoje."""
+    return Partida.objects.filter(
+        Q(atleta_id=atleta.pk) | Q(tipo_adversario='poli', adversario_id=atleta.pk),
+        status='confirmada', data_jogo__lte=hoje,
+    ).order_by('data_jogo').values_list('data_jogo', flat=True).first()
+
+
+def colocacoes_do_atleta(atleta, inicio, fim, competicao='todas'):
+    """Resultados de inscrições ativas, pela data final do campeonato.
+
+    Tipo de adversário não se aplica à colocação de uma categoria.
+    """
+    from competicoes.models import Inscricao
+
+    if competicao == 'amistoso':
+        return []
+    inscricoes = Inscricao.objects.filter(
+        atleta=atleta, status='ativa', colocacao__isnull=False,
+        categoria__campeonato__data_fim__range=(inicio, fim),
+    ).exclude(categoria__campeonato__status='cancelado')
+    if competicao != 'todas':
+        inscricoes = inscricoes.filter(categoria__campeonato_id=int(competicao))
+    return [
+        {
+            'campeonato': item.categoria.campeonato.nome,
+            'categoria': item.categoria.nome, 'colocacao': item.colocacao,
+            'destaque': item.destaque, 'data': item.categoria.campeonato.data_fim,
+        }
+        for item in inscricoes.select_related('categoria__campeonato').order_by(
+            '-categoria__campeonato__data_fim', 'categoria__nome', 'id'
+        )
+    ]
