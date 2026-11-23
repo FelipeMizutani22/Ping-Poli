@@ -1,8 +1,8 @@
-import { apiFetch } from "./client";
+import { apiFetch } from './client';
 
-// Trilha D · funções de competicoes (03_CONTRATO_API). Ex.:
-// export const listarAlgo = (params) => apiFetch("caminho/", { params });
 export { apiFetch };
-
-// Trilha D · campeonatos (03_CONTRATO_API §4). Usado também pelo formulário de partida (UC15).
-export const listarCampeonatos = (params) => apiFetch("campeonatos/", { params });
+export const listarCampeonatos = (params) => apiFetch('campeonatos/', { params });
+export const buscarCampeonato = (id) => apiFetch(`campeonatos/${id}/`);
+export const criarCampeonato = (body) => apiFetch('campeonatos/', { method: 'POST', body });
+export const editarCampeonato = (id, body) => apiFetch(`campeonatos/${id}/`, { method: 'PATCH', body });
+export const cancelarCampeonato = (id, motivo) => apiFetch(`campeonatos/${id}/cancelar/`, { method: 'POST', body: { motivo } });
