@@ -50,6 +50,7 @@ export default function DetalheCampeonato() {
     <div className="d-flex justify-content-between align-items-start flex-wrap gap-3 my-3">
       <div><h1 className="h3">{c.nome}</h1><BadgeStatus status={c.status} grupo="statusCampeonato" /> {c.inscrito && <Badge bg="primary">Você está inscrito</Badge>}</div>
       {ehDiretor && <div className="d-flex flex-wrap gap-2">
+        <Button as={Link} to={`/campeonatos/${id}/inscricoes`} variant="outline-primary">Inscritos e resultados</Button>
         <Button as={Link} to={`/campeonatos/${id}/editar`} variant="outline-primary">Editar campeonato</Button>
         {c.status === 'planejado' && <Button onClick={() => abrir('abrir')}>Abrir inscrições agora</Button>}
         {c.status === 'inscricoes_abertas' && <Button variant="outline-primary" onClick={() => abrir('encerrar')}>Encerrar inscrições agora</Button>}

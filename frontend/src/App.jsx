@@ -1,3 +1,4 @@
+import GestaoInscricoes from './pages/competicoes/GestaoInscricoes';
 import MinhasInscricoes from './pages/competicoes/MinhasInscricoes';
 import { Route, Routes } from "react-router-dom";
 
@@ -59,6 +60,7 @@ export default function App() {
           <Route path="/confronto" element={<Confronto />} />
 
           <Route element={<RotaDiretor />}>
+            <Route path="/campeonatos/:id/inscricoes" element={<GestaoInscricoes />} />
             <Route path="/admin/atletas" element={<GestaoAtletas />} />
             <Route path="/avisos/novo" element={<FormAviso />} />
             <Route path="/avisos/:id/editar" element={<FormAviso />} />
