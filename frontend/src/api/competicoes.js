@@ -10,3 +10,8 @@ export const cancelarCampeonato = (id, motivo) => apiFetch(`campeonatos/${id}/ca
 export const minhasInscricoes = () => apiFetch('inscricoes/minhas/');
 export const inscrever = (body) => apiFetch('inscricoes/', { method: 'POST', body });
 export const cancelarInscricao = (id) => apiFetch(`inscricoes/${id}/`, { method: 'DELETE' });
+
+export const listarInscritos = (id) => apiFetch(`campeonatos/${id}/inscricoes/`);
+export const incluirInscrito = (id, body) => apiFetch(`campeonatos/${id}/inscricoes/`, { method: 'POST', body });
+export const salvarResultados = (id, body) => apiFetch(`campeonatos/${id}/resultados/`, { method: 'PATCH', body });
+export const removerInscrito = (id, motivo) => apiFetch(`inscricoes/${id}/remover/`, { method: 'POST', body: { motivo } });

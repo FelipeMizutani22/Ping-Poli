@@ -1,0 +1,13 @@
+.lista-impressao { display: none; }
+@media print {
+  body:has(.lista-impressao) * { visibility: hidden; }
+  .gestao-tela { display: none; }
+  .lista-impressao, .lista-impressao * { visibility: visible; }
+  .lista-impressao { display: block; position: absolute; top: 0; left: 0; width: 100%; color: black; font-size: 10pt; }
+  .lista-impressao table { width: 100%; border-collapse: collapse; }
+  .lista-impressao td, .lista-impressao th { border: 1px solid #555; padding: 5px; overflow-wrap: anywhere; white-space: pre-wrap; }
+  .lista-impressao thead { display: table-header-group; }
+  .lista-impressao tr { break-inside: avoid; }
+  .lista-impressao h2 { break-after: avoid; }
+  @page { size: landscape; margin: 12mm; }
+}
