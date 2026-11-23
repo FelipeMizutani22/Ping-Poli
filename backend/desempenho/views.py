@@ -4,10 +4,10 @@ from django.utils import timezone
 from rest_framework import generics, serializers
 from rest_framework.response import Response
 
-from contas.permissoes import AtletaAtivo
+from contas.permissoes import AtletaAtivo, Diretor
 from contas.serializers import AtletaResumoSerializer
 from . import calculos, consultas
-from .serializers import FiltrosDashboardSerializer
+from .serializers import FiltrosDashboardSerializer, FiltrosEquipeSerializer
 
 
 class DashboardView(generics.GenericAPIView):
@@ -49,4 +49,24 @@ class DashboardView(generics.GenericAPIView):
             'colocacoes': consultas.colocacoes_do_atleta(atleta, inicio, fim, dados['competicao']),
             'recentes': calculos.recentes(linhas),
             'mais_enfrentados': calculos.mais_enfrentados(linhas),
+        })
+
+
+class EquipeView(generics.GenericAPIView):
+    permission_classes = [Diretor]
+    serializer_class = FiltrosEquipeSerializer
+
+    def get(self, request):
+        filtros = self.get_serializer(data=request.query_params)
+        filtros.is_valid(raise_exception=True)
+        dados = filtros.validated_data
+        hoje = timezone.localdate()
+        primeira = consultas.primeira_data_da_equipe(hoje) if dados['periodo'] == 'tudo' else None
+        inicio, fim = calculos.resolver_periodo(
+            dados['periodo'], hoje=hoje, inicio=dados.get('inicio'), fim=dados.get('fim'), primeira_data=primeira)
+        grupos = consultas.linhas_da_equipe(inicio, fim, dados['competicao'])
+        linhas = [linha for grupo in grupos for linha in grupo['linhas']]
+        return Response({
+            'ranking': calculos.ranking_equipe(grupos),
+            'partidas_por_mes': calculos.partidas_por_mes(linhas, inicio, fim),
         })
