@@ -22,8 +22,17 @@ def _carregar_env(caminho):
 _carregar_env(BASE_DIR / ".env")
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-inseguro-troque-em-producao")
-DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
+# No Render (variável RENDER definida pela plataforma) o padrão é DEBUG desligado.
+EM_PRODUCAO = "RENDER" in os.environ
+DEBUG = os.environ.get("DJANGO_DEBUG", "0" if EM_PRODUCAO else "1") == "1"
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+
+if EM_PRODUCAO:
+    # Endereço público do serviço (ex.: pingpoli-api.onrender.com), informado pelo próprio Render.
+    if os.environ.get("RENDER_EXTERNAL_HOSTNAME"):
+        ALLOWED_HOSTS.append(os.environ["RENDER_EXTERNAL_HOSTNAME"])
+    # O Render recebe o HTTPS e repassa ao Django; este cabeçalho diz que a conexão original era segura.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -55,6 +64,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware"  # serve os arquivos estáticos do /admin/ em produção
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -101,6 +111,7 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"  # destino do `collectstatic` (usado só no deploy)
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # --- API ---------------------------------------------------------------
